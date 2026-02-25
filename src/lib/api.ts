@@ -21,9 +21,26 @@ function getFunctionsBaseUrl() {
 }
 
 async function getBearerToken() {
+  const sessionToken = await getSessionAccessToken();
+  if (sessionToken) return sessionToken;
+
   const envToken = (import.meta.env.VITE_ADMIN_BEARER_TOKEN as string | undefined)?.trim();
-  if (envToken) return envToken;
-  return getSessionAccessToken();
+  if (!envToken) return null;
+
+  // Avoid using expired static tokens from .env (common in local dev).
+  const parts = envToken.split(".");
+  if (parts.length === 3) {
+    try {
+      const payload = JSON.parse(atob(parts[1]));
+      if (typeof payload.exp === "number" && Date.now() >= payload.exp * 1000) {
+        return null;
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  return envToken;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
