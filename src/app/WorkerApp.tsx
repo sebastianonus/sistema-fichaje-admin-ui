@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Clock3, LogIn, LogOut, User } from "lucide-react";
-import { signInWithEmailPassword, signOutAdmin, supabase } from "@/lib/supabase";
+import { ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
 
 interface WorkerProfile {
@@ -60,9 +60,22 @@ export default function WorkerApp() {
       }
       const { data } = await supabase.auth.getSession();
       const ok = !!data.session;
-      setAuthed(ok);
-      setReady(true);
-      if (ok) await load();
+      if (!ok) {
+        setAuthed(false);
+        setReady(true);
+        return;
+      }
+
+      try {
+        await ensureRole("worker");
+        setAuthed(true);
+        await load();
+      } catch (err) {
+        setAuthed(false);
+        setError(err instanceof Error ? err.message : "Sesion no valida para trabajador");
+      } finally {
+        setReady(true);
+      }
     }
 
     boot();
@@ -73,7 +86,7 @@ export default function WorkerApp() {
     try {
       setLoginLoading(true);
       setError(null);
-      await signInWithEmailPassword(email.trim(), password);
+      await signInWithRole(email.trim(), password, "worker");
       setAuthed(true);
       await load();
     } catch (err) {
@@ -207,4 +220,3 @@ export default function WorkerApp() {
     </div>
   );
 }
-

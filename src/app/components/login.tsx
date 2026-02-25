@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Lock, Mail } from "lucide-react";
 import { TEXTS } from "@/constants/texts";
-import { signInAdmin } from "@/lib/supabase";
+import { signInWithRole } from "@/lib/supabase";
 
 interface LoginProps {
   onSuccess: () => void;
@@ -22,7 +22,7 @@ export function Login({ onSuccess }: LoginProps) {
     try {
       setLoading(true);
       setError(null);
-      await signInAdmin(email.trim(), password);
+      await signInWithRole(email.trim(), password, "admin");
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de autenticación");
@@ -88,4 +88,3 @@ export function Login({ onSuccess }: LoginProps) {
     </div>
   );
 }
-

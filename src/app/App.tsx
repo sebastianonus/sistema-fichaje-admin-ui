@@ -5,7 +5,7 @@ import { Trabajadores } from '@/app/components/trabajadores';
 import { Exports } from '@/app/components/exports';
 import { Ajustes } from '@/app/components/ajustes';
 import { Login } from '@/app/components/login';
-import { hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
+import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
 
 export type Page = 'dashboard' | 'trabajadores' | 'exports' | 'ajustes';
 
@@ -29,7 +29,18 @@ export default function App() {
       }
 
       const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
+      if (!data.session) {
+        setIsAuthenticated(false);
+        setAuthReady(true);
+        return;
+      }
+
+      try {
+        await ensureRole('admin');
+        setIsAuthenticated(true);
+      } catch {
+        setIsAuthenticated(false);
+      }
       setAuthReady(true);
     }
 
