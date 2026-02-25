@@ -8,9 +8,15 @@ import { Login } from '@/app/components/login';
 import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
 
 export type Page = 'dashboard' | 'trabajadores' | 'exports' | 'ajustes';
+export type WorkersPreset = {
+  isActive?: 'active' | 'inactive';
+  clockedIn?: boolean;
+  token: number;
+} | null;
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [workersPreset, setWorkersPreset] = useState<WorkersPreset>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -53,6 +59,14 @@ export default function App() {
     setCurrentPage('dashboard');
   };
 
+  const handleOpenWorkersFiltered = (preset: { isActive?: 'active' | 'inactive'; clockedIn?: boolean }) => {
+    setWorkersPreset({
+      ...preset,
+      token: Date.now(),
+    });
+    setCurrentPage('trabajadores');
+  };
+
   if (!authReady) {
     return <div className="min-h-screen flex items-center justify-center text-[#666666]">Cargando...</div>;
   }
@@ -70,8 +84,13 @@ export default function App() {
         onLogout={handleLogout}
       />
       <main className="flex-1 overflow-auto pt-16 lg:pt-0">
-        {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} />}
-        {currentPage === 'trabajadores' && <Trabajadores />}
+        {currentPage === 'dashboard' && (
+          <Dashboard
+            onNavigate={setCurrentPage}
+            onOpenWorkersFiltered={handleOpenWorkersFiltered}
+          />
+        )}
+        {currentPage === 'trabajadores' && <Trabajadores preset={workersPreset} />}
         {currentPage === 'exports' && <Exports />}
         {currentPage === 'ajustes' && <Ajustes />}
       </main>

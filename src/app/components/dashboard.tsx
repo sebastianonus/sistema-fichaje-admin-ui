@@ -7,9 +7,10 @@ import type { DashboardMetrics } from '@/lib/types';
 
 interface DashboardProps {
   onNavigate: (page: Page) => void;
+  onOpenWorkersFiltered: (preset: { isActive?: 'active' | 'inactive'; clockedIn?: boolean }) => void;
 }
 
-export function Dashboard({ onNavigate }: DashboardProps) {
+export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps) {
   const [data, setData] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,8 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           loading={loading}
           error={error}
           onRetry={fetchMetrics}
+          onClick={() => onOpenWorkersFiltered({ isActive: 'active' })}
+          actionLabel="Ver activos"
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.active_workers ?? TEXTS.common.noData}</div>
         </MetricCard>
@@ -73,6 +76,8 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           error={error}
           onRetry={fetchMetrics}
           expandable
+          onClick={() => onOpenWorkersFiltered({ isActive: 'active', clockedIn: true })}
+          actionLabel="Ver fichados ahora"
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.clocked_in_workers_count ?? TEXTS.common.noData}</div>
           {!!data?.clocked_in_workers?.length && (
@@ -93,6 +98,8 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           loading={loading}
           error={error}
           onRetry={fetchMetrics}
+          onClick={() => onNavigate('exports')}
+          actionLabel="Ir a exports"
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.events_today ?? TEXTS.common.noData}</div>
         </MetricCard>
@@ -108,10 +115,12 @@ interface MetricCardProps {
   error: string | null;
   onRetry: () => void;
   expandable?: boolean;
+  onClick?: () => void;
+  actionLabel?: string;
   children: React.ReactNode;
 }
 
-function MetricCard({ title, icon: Icon, loading, error, onRetry, expandable, children }: MetricCardProps) {
+function MetricCard({ title, icon: Icon, loading, error, onRetry, expandable, onClick, actionLabel, children }: MetricCardProps) {
   if (loading) {
     return (
       <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 animate-pulse">
@@ -136,13 +145,28 @@ function MetricCard({ title, icon: Icon, loading, error, onRetry, expandable, ch
     );
   }
 
-  return (
-    <div className={`bg-white border border-[#e5e5e5] rounded-lg p-6 ${expandable ? 'hover:shadow-lg transition-shadow cursor-pointer' : ''}`}>
+  const className = `bg-white border border-[#e5e5e5] rounded-lg p-6 text-left ${
+    onClick || expandable ? 'hover:shadow-lg transition-shadow cursor-pointer' : ''
+  }`;
+
+  const content = (
+    <>
       <div className="flex items-center gap-2 mb-4 text-[#666666]">
         <Icon className="w-5 h-5" />
         <h3 className="font-medium">{title}</h3>
       </div>
       {children}
-    </div>
+      {actionLabel && <div className="mt-4 text-sm font-medium text-[#00C9CE]">{actionLabel}</div>}
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }

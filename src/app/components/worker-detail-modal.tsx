@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X, Edit2, Copy, Check, AlertTriangle } from 'lucide-react';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
@@ -19,6 +19,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showFullHistory, setShowFullHistory] = useState(false);
   const [newPassword, setNewPassword] = useState('');
 
   const [worker, setWorker] = useState<WorkerDetail | null>(null);
@@ -49,6 +50,63 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
     }, 15000);
     return () => window.clearInterval(id);
   }, [workerId]);
+
+  useEffect(() => {
+    setShowFullHistory(false);
+  }, [workerId]);
+
+  const historyState = useMemo(() => {
+    const allEvents = [...(worker?.time_events ?? [])].sort(
+      (a, b) => new Date(b.happened_at).getTime() - new Date(a.happened_at).getTime(),
+    );
+    if (!allEvents.length) {
+      return {
+        latestJourneyDate: null as string | null,
+        latestJourneyEvents: [] as WorkerDetail['time_events'],
+        latestClockIn: null as WorkerDetail['time_events'][number] | null,
+        latestClockOut: null as WorkerDetail['time_events'][number] | null,
+        totalMinutes: null as number | null,
+      };
+    }
+
+    const grouped = new Map<string, WorkerDetail['time_events']>();
+    for (const event of allEvents) {
+      const key = new Date(event.happened_at).toLocaleDateString('sv-SE');
+      const group = grouped.get(key);
+      if (group) group.push(event);
+      else grouped.set(key, [event]);
+    }
+
+    const latestJourneyDate = [...grouped.keys()].sort((a, b) => b.localeCompare(a))[0];
+    const latestJourneyEvents = [...(grouped.get(latestJourneyDate) ?? [])].sort(
+      (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
+    );
+    const latestClockIn = latestJourneyEvents.find((e) => e.event_type === 'CLOCK_IN') ?? null;
+    const latestClockOut = [...latestJourneyEvents].reverse().find((e) => e.event_type === 'CLOCK_OUT') ?? null;
+    const totalMinutes = latestClockIn && latestClockOut
+      ? Math.max(
+        0,
+        Math.round(
+          (new Date(latestClockOut.happened_at).getTime() - new Date(latestClockIn.happened_at).getTime()) / 60000,
+        ),
+      )
+      : null;
+
+    return {
+      latestJourneyDate,
+      latestJourneyEvents,
+      latestClockIn,
+      latestClockOut,
+      totalMinutes,
+    };
+  }, [worker?.time_events]);
+
+  const formatMinutes = (minutes: number | null) => {
+    if (minutes === null) return 'N/A';
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h}h ${m.toString().padStart(2, '0')}m`;
+  };
 
   const handleCopyUuid = () => {
     navigator.clipboard.writeText(workerId);
@@ -236,11 +294,43 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
                   <div className="mb-4">
                     <WorkdayTimeline events={worker.time_events} title="Fichaje de hoy (tiempo real)" />
                   </div>
+
+                  <div className="mb-4 p-3 bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg">
+                    <div className="font-medium text-[#000935] mb-1">Ultima jornada registrada</div>
+                    {historyState.latestJourneyDate ? (
+                      <>
+                        <div className="text-sm text-[#666666] mb-1">
+                          Fecha: {new Date(`${historyState.latestJourneyDate}T00:00:00`).toLocaleDateString('es-ES')}
+                        </div>
+                        <div className="text-sm text-[#666666]">
+                          Entrada: {historyState.latestClockIn ? new Date(historyState.latestClockIn.happened_at).toLocaleTimeString('es-ES') : 'N/A'} | Salida: {historyState.latestClockOut ? new Date(historyState.latestClockOut.happened_at).toLocaleTimeString('es-ES') : 'Pendiente'} | Total: {formatMinutes(historyState.totalMinutes)}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-[#666666]">{TEXTS.workerDetail.timeEvents.noEvents}</p>
+                    )}
+                  </div>
+
+                  {!!worker.time_events.length && (
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm text-[#666666]">
+                        {showFullHistory ? 'Historial completo' : 'Eventos de la ultima jornada'}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setShowFullHistory((v) => !v)}
+                        className="text-sm text-[#00C9CE] hover:underline"
+                      >
+                        {showFullHistory ? 'Ver solo ultima jornada' : 'Ver historial completo'}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="max-h-64 overflow-y-auto space-y-2">
                     {worker.time_events.length === 0 ? (
                       <p className="text-[#666666] text-sm">{TEXTS.workerDetail.timeEvents.noEvents}</p>
                     ) : (
-                      worker.time_events.map((event) => (
+                      (showFullHistory ? worker.time_events : historyState.latestJourneyEvents).map((event) => (
                         <div key={event.id} className="flex justify-between items-start p-3 bg-[#f9f9f9] rounded-lg">
                           <div>
                             <div className="font-medium text-[#000935]">{event.event_type}</div>
@@ -385,4 +475,5 @@ function DeactivateWorkerModal({ onConfirm, onCancel }: DeactivateWorkerModalPro
     </div>
   );
 }
+
 

@@ -13,7 +13,7 @@ describe('Dashboard', () => {
       clocked_in_workers: [],
     });
 
-    render(<Dashboard onNavigate={vi.fn()} />);
+    render(<Dashboard onNavigate={vi.fn()} onOpenWorkersFiltered={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText('12')).toBeInTheDocument();
@@ -22,4 +22,3 @@ describe('Dashboard', () => {
     });
   });
 });
-

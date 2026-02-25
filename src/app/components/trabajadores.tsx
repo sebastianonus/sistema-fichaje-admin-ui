@@ -5,8 +5,13 @@ import { CreateWorkerModal } from '@/app/components/create-worker-modal';
 import { TEXTS } from '@/constants/texts';
 import { getWorkers } from '@/lib/api';
 import type { WorkerSummary } from '@/lib/types';
+import type { WorkersPreset } from '@/app/App';
 
-export function Trabajadores() {
+interface TrabajadoresProps {
+  preset?: WorkersPreset;
+}
+
+export function Trabajadores({ preset }: TrabajadoresProps) {
   const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -49,6 +54,17 @@ export function Trabajadores() {
   useEffect(() => {
     fetchWorkers();
   }, [filterActive, search, filterDateFrom, filterDateTo, filterClockedIn]);
+
+  useEffect(() => {
+    if (!preset) return;
+    setFilterName('');
+    setFilterEmail('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setFilterActive(preset.isActive ?? 'all');
+    setFilterClockedIn(!!preset.clockedIn);
+    setShowFilters(true);
+  }, [preset?.token]);
 
   const clearFilters = () => {
     setFilterActive('all');
