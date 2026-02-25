@@ -75,7 +75,7 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
 
       <div className="rounded-3xl border-4 border-[#00C9CE] bg-[#f7fbfd] p-5">
         <div className="relative h-24">
-          <div className="absolute top-0 left-0 right-0 flex justify-between px-1 text-[34px] leading-none font-semibold text-[#2dc3d5]">
+          <div className="absolute top-0 left-0 right-0 flex justify-between px-1 text-[12px] md:text-[16px] leading-none font-semibold text-[#2dc3d5]">
             <span>00:00</span>
             <span>06:00</span>
             <span>12:00</span>
@@ -100,7 +100,7 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
             <div
               className="absolute top-[52px] h-[20px] w-[20px] rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_2px_#2dc3d5]"
               style={{
-                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 10px)`,
+                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 10px + 6px)`,
               }}
               aria-label="Punto actual de jornada"
               title={`Jornada activa - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
