@@ -5,6 +5,12 @@ import { TEXTS } from '@/constants/texts';
 import { createExport, getExportSignedUrl, getExports, revokeExport } from '@/lib/api';
 import type { ExportRecord } from '@/lib/types';
 
+function getReadableCreatorName(exp: ExportRecord) {
+  const name = exp.created_by_name?.trim();
+  if (name) return name;
+  return 'Usuario del sistema';
+}
+
 export function Exports() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [revokeExportId, setRevokeExportId] = useState<string | null>(null);
@@ -126,10 +132,7 @@ export function Exports() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-[#666666]">{new Date(exp.created_at).toLocaleString('es-ES')}</td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm text-[#000935]">{exp.created_by_name || `${exp.created_by.slice(0, 8)}...`}</span>
-                          <span className="text-xs text-[#666666]">{exp.created_by}</span>
-                        </div>
+                        <span className="text-sm text-[#000935]">{getReadableCreatorName(exp)}</span>
                       </td>
                       <td className="px-6 py-4">
                         <code className="text-xs text-[#666666] bg-[#f9f9f9] px-2 py-1 rounded">
