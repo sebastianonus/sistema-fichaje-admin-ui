@@ -3,9 +3,20 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
+function getAuthStorageKey() {
+  if (typeof window === "undefined") return "onus-auth-admin";
+  return window.location.pathname.startsWith("/worker")
+    ? "onus-auth-worker"
+    : "onus-auth-admin";
+}
+
 export const supabase =
   supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storageKey: getAuthStorageKey(),
+      },
+    })
     : null;
 
 export type UserRole = "admin" | "worker";
