@@ -22,6 +22,10 @@ function minuteOfDay(d: Date) {
   return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
 }
 
+function clampMinute(minute: number) {
+  return Math.min(Math.max(minute, 0), DAY_MINUTES);
+}
+
 function isToday(d: Date) {
   const now = new Date();
   return (
@@ -50,7 +54,7 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
     const markers = todays.map((e) => ({
       id: e.id,
       type: e.event_type,
-      minute: minuteOfDay(e.date),
+      minute: clampMinute(minuteOfDay(e.date)),
       timeLabel: e.date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
     }));
 
@@ -59,12 +63,12 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
     for (const m of markers) {
       if (m.type === "CLOCK_IN") openStart = m.minute;
       if (m.type === "CLOCK_OUT" && openStart !== null) {
-        segments.push({ start: openStart, end: m.minute });
+        segments.push({ start: clampMinute(openStart), end: clampMinute(m.minute) });
         openStart = null;
       }
     }
     const hasOpenSegment = openStart !== null;
-    if (openStart !== null) segments.push({ start: openStart, end: nowMinute });
+    if (openStart !== null) segments.push({ start: clampMinute(openStart), end: clampMinute(nowMinute) });
 
     return { markers, segments, hasOpenSegment, openHandleMinute: hasOpenSegment ? nowMinute : null };
   }, [events, nowMinute]);
@@ -83,29 +87,37 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
             <span>23:59</span>
           </div>
 
-          <div className="absolute top-[48px] left-0 right-0 h-8 rounded-full border-[5px] border-[#9b9b9b] bg-[#f8f8f8]" />
+          <div className="absolute top-[48px] left-0 right-0 h-8 rounded-full border-[5px] border-[#9b9b9b] bg-[#f8f8f8]">
+            <div className="absolute top-1/2 left-[6px] right-[6px] h-[14px] -translate-y-1/2">
+              {processed.segments.map((s, i) => {
+                const startPct = (clampMinute(s.start) / DAY_MINUTES) * 100;
+                const endPct = (clampMinute(s.end) / DAY_MINUTES) * 100;
+                const widthPct = Math.max(endPct - startPct, 0);
 
-          {processed.segments.map((s, i) => (
-            <div
-              key={`${s.start}-${s.end}-${i}`}
-              className="absolute top-[57px] h-[14px] rounded-full bg-[#2dc3d5]"
-              style={{
-                left: `calc(${(s.start / DAY_MINUTES) * 100}% + 6px)`,
-                width: `${Math.max(((s.end - s.start) / DAY_MINUTES) * 100, 2.6)}%`,
-              }}
-            />
-          ))}
+                return (
+                  <div
+                    key={`${s.start}-${s.end}-${i}`}
+                    className="absolute top-0 h-[14px] rounded-full bg-[#2dc3d5]"
+                    style={{
+                      left: `${startPct}%`,
+                      width: `max(${widthPct}%, 2px)`,
+                    }}
+                  />
+                );
+              })}
 
-          {processed.hasOpenSegment && processed.openHandleMinute !== null && (
-            <div
-              className="absolute top-[54px] h-[20px] w-[20px] rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_2px_#2dc3d5]"
-              style={{
-                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 10px + 6px)`,
-              }}
-              aria-label="Punto actual de jornada"
-              title={`Jornada activa - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
-            />
-          )}
+              {processed.hasOpenSegment && processed.openHandleMinute !== null && (
+                <div
+                  className="absolute top-1/2 h-[20px] w-[20px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_2px_#2dc3d5]"
+                  style={{
+                    left: `${(clampMinute(processed.openHandleMinute) / DAY_MINUTES) * 100}%`,
+                  }}
+                  aria-label="Punto actual de jornada"
+                  title={`Jornada activa - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
