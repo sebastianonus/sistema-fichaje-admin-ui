@@ -88,7 +88,7 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
           {processed.segments.map((s, i) => (
             <div
               key={`${s.start}-${s.end}-${i}`}
-              className="absolute top-[55px] h-[14px] rounded-full bg-[#2dc3d5]"
+              className="absolute top-[57px] h-[14px] rounded-full bg-[#2dc3d5]"
               style={{
                 left: `calc(${(s.start / DAY_MINUTES) * 100}% + 6px)`,
                 width: `${Math.max(((s.end - s.start) / DAY_MINUTES) * 100, 2.6)}%`,
@@ -98,7 +98,7 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
 
           {processed.hasOpenSegment && processed.openHandleMinute !== null && (
             <div
-              className="absolute top-[52px] h-[20px] w-[20px] rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_2px_#2dc3d5]"
+              className="absolute top-[54px] h-[20px] w-[20px] rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_2px_#2dc3d5]"
               style={{
                 left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 10px + 6px)`,
               }}
