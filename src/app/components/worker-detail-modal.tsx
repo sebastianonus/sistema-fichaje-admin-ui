@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { X, Edit2, Copy, Check, AlertTriangle } from 'lucide-react';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
+import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { TEXTS } from '@/constants/texts';
 import { changeWorkerPassword, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
 import type { WorkerDetail } from '@/lib/types';
@@ -40,6 +41,13 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
 
   useEffect(() => {
     fetchWorker();
+  }, [workerId]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      fetchWorker();
+    }, 15000);
+    return () => window.clearInterval(id);
   }, [workerId]);
 
   const handleCopyUuid = () => {
@@ -225,6 +233,9 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
 
                 <div className="border-t border-[#e5e5e5] pt-6">
                   <h3 className="mb-4">{TEXTS.workerDetail.sections.timeEvents}</h3>
+                  <div className="mb-4">
+                    <WorkdayTimeline events={worker.time_events} title="Fichaje de hoy (tiempo real)" />
+                  </div>
                   <div className="max-h-64 overflow-y-auto space-y-2">
                     {worker.time_events.length === 0 ? (
                       <p className="text-[#666666] text-sm">{TEXTS.workerDetail.timeEvents.noEvents}</p>
@@ -374,3 +385,4 @@ function DeactivateWorkerModal({ onConfirm, onCancel }: DeactivateWorkerModalPro
     </div>
   );
 }
+

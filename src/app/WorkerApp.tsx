@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Clock3, LogIn, LogOut, User } from "lucide-react";
 import { ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
+import { WorkdayTimeline } from "@/app/components/workday-timeline";
 
 interface WorkerProfile {
   id: string;
@@ -80,6 +81,14 @@ export default function WorkerApp() {
 
     boot();
   }, []);
+
+  useEffect(() => {
+    if (!authed) return;
+    const id = window.setInterval(() => {
+      load();
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [authed]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,6 +207,8 @@ export default function WorkerApp() {
           </div>
           {error && <p className="text-sm text-[#dc2626] mt-3">{error}</p>}
         </div>
+
+        <WorkdayTimeline events={events} title="Linea de fichaje de hoy" />
 
         <div className="bg-white border border-[#e5e5e5] rounded-xl p-5">
           <h2 className="font-semibold text-[#000935] mb-3">Ultimos eventos</h2>
