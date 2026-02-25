@@ -10,9 +10,30 @@ export const supabase =
 
 export type UserRole = "admin" | "worker";
 
-export function hasStaticAdminToken() {
+function isTokenExpired(jwt: string) {
+  const parts = jwt.split(".");
+  if (parts.length !== 3) return true;
+  try {
+    const payload = JSON.parse(atob(parts[1]));
+    return typeof payload.exp !== "number" || Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+}
+
+export function isStaticAdminTokenModeEnabled() {
+  return (import.meta.env.VITE_ENABLE_STATIC_ADMIN_TOKEN as string | undefined) === "true";
+}
+
+export function getStaticAdminToken() {
+  if (!isStaticAdminTokenModeEnabled()) return null;
   const token = (import.meta.env.VITE_ADMIN_BEARER_TOKEN as string | undefined)?.trim();
-  return !!token;
+  if (!token) return null;
+  return isTokenExpired(token) ? null : token;
+}
+
+export function hasStaticAdminToken() {
+  return !!getStaticAdminToken();
 }
 
 export async function getSessionAccessToken() {
