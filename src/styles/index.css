@@ -1,0 +1,5 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* UI NOTE: Sidebar and modal transitions handled in frontend implementation */

@@ -1,0 +1,69 @@
+import { useEffect, useState } from 'react';
+import { Sidebar } from '@/app/components/sidebar';
+import { Dashboard } from '@/app/components/dashboard';
+import { Trabajadores } from '@/app/components/trabajadores';
+import { Exports } from '@/app/components/exports';
+import { Ajustes } from '@/app/components/ajustes';
+import { Login } from '@/app/components/login';
+import { hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
+
+export type Page = 'dashboard' | 'trabajadores' | 'exports' | 'ajustes';
+
+export default function App() {
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [authReady, setAuthReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    async function boot() {
+      if (hasStaticAdminToken()) {
+        setIsAuthenticated(true);
+        setAuthReady(true);
+        return;
+      }
+
+      if (!supabase) {
+        setIsAuthenticated(false);
+        setAuthReady(true);
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+      setAuthReady(true);
+    }
+
+    boot();
+  }, []);
+
+  const handleLogout = async () => {
+    await signOutAdmin();
+    setIsAuthenticated(false);
+    setCurrentPage('dashboard');
+  };
+
+  if (!authReady) {
+    return <div className="min-h-screen flex items-center justify-center text-[#666666]">Cargando...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Login onSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  return (
+    <div className="flex h-screen bg-white">
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+        showLogout={!hasStaticAdminToken()}
+        onLogout={handleLogout}
+      />
+      <main className="flex-1 overflow-auto pt-16 lg:pt-0">
+        {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} />}
+        {currentPage === 'trabajadores' && <Trabajadores />}
+        {currentPage === 'exports' && <Exports />}
+        {currentPage === 'ajustes' && <Ajustes />}
+      </main>
+    </div>
+  );
+}
