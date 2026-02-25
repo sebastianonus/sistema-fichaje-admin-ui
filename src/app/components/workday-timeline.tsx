@@ -63,9 +63,10 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
         openStart = null;
       }
     }
+    const hasOpenSegment = openStart !== null;
     if (openStart !== null) segments.push({ start: openStart, end: nowMinute });
 
-    return { markers, segments };
+    return { markers, segments, hasOpenSegment, openHandleMinute: hasOpenSegment ? nowMinute : null };
   }, [events, nowMinute]);
 
   return (
@@ -105,20 +106,28 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
           {processed.markers.map((m) => (
             <div
               key={m.id}
-              className={`absolute top-[44px] h-5 w-5 rounded-full border-2 ${
-                m.type === "CLOCK_IN"
-                  ? "bg-[#16a34a] border-[#14532d]"
-                  : "bg-[#dc2626] border-[#7f1d1d]"
+              className={`absolute top-[45px] h-4 w-[3px] rounded-full ${
+                m.type === "CLOCK_IN" ? "bg-[#16a34a]" : "bg-[#dc2626]"
               }`}
               style={{
-                left: `calc(${(m.minute / DAY_MINUTES) * 100}% - 10px)`,
+                left: `calc(${(m.minute / DAY_MINUTES) * 100}% - 1px)`,
               }}
               title={`${m.type} - ${m.timeLabel}`}
             />
           ))}
+
+          {processed.hasOpenSegment && processed.openHandleMinute !== null && (
+            <div
+              className="absolute top-[43px] h-[18px] w-[18px] rounded-full border-2 border-white bg-[#22c55e]/15 ring-1 ring-[#16a34a]/70"
+              style={{
+                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 9px)`,
+              }}
+              aria-label="Punto actual de jornada"
+              title={`Jornada activa - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 }
-
