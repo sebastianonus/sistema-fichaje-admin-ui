@@ -11,6 +11,23 @@ function getReadableCreatorName(exp: ExportRecord) {
   return 'Usuario del sistema';
 }
 
+function formatFriendlyExportName(exp: ExportRecord) {
+  const from = exp.filters.from ? new Date(exp.filters.from).toISOString().slice(0, 10) : null;
+  const to = exp.filters.to ? new Date(exp.filters.to).toISOString().slice(0, 10) : null;
+  const stamp = new Date(exp.created_at).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
+  if (from && to) return `fichajes_${from}_a_${to}_${stamp}.csv`;
+  if (from) return `fichajes_desde_${from}_${stamp}.csv`;
+  if (to) return `fichajes_hasta_${to}_${stamp}.csv`;
+  return `fichajes_${stamp}.csv`;
+}
+
+function displayExportFileName(exp: ExportRecord) {
+  const raw = exp.storage_path?.split('/').pop() || '';
+  // Old exports may be stored as UUID-only names; render a friendly name in UI.
+  if (/^[0-9a-fA-F-]{20,}\.csv$/.test(raw)) return formatFriendlyExportName(exp);
+  return raw || formatFriendlyExportName(exp);
+}
+
 export function Exports() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [revokeExportId, setRevokeExportId] = useState<string | null>(null);
@@ -37,10 +54,21 @@ export function Exports() {
     fetchExports();
   }, []);
 
-  const handleDownload = async (exportId: string) => {
+  const handleDownload = async (exp: ExportRecord) => {
     try {
-      const data = await getExportSignedUrl(exportId);
-      window.open(data.signed_url, '_blank', 'noopener,noreferrer');
+      const data = await getExportSignedUrl(exp.id);
+      const filename = displayExportFileName(exp);
+      const res = await fetch(data.signed_url);
+      if (!res.ok) throw new Error('DOWNLOAD_FAILED');
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
     }
@@ -121,7 +149,7 @@ export function Exports() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-[#666666]" />
-                          <span className="font-medium text-[#000935]">{exp.storage_path?.split('/').pop() || `${exp.id}.csv`}</span>
+                          <span className="font-medium text-[#000935]">{displayExportFileName(exp)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-[#666666]">
@@ -150,7 +178,7 @@ export function Exports() {
                         <div className="flex gap-2">
                           {exp.status === 'READY' && !exp.deleted_at && (
                             <>
-                              <button onClick={() => handleDownload(exp.id)} className="text-[#00C9CE] hover:underline">{TEXTS.exports.table.actions.download}</button>
+                              <button onClick={() => handleDownload(exp)} className="text-[#00C9CE] hover:underline">{TEXTS.exports.table.actions.download}</button>
                               <span className="text-[#e5e5e5]">|</span>
                               <button onClick={() => setRevokeExportId(exp.id)} className="text-[#dc2626] hover:underline">{TEXTS.exports.table.actions.revoke}</button>
                             </>
