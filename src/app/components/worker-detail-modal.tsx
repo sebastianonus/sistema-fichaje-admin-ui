@@ -3,7 +3,7 @@ import { X, Edit2, Copy, Check, AlertTriangle } from 'lucide-react';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { TEXTS } from '@/constants/texts';
-import { changeWorkerPassword, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
+import { activateWorker, changeWorkerPassword, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
 import type { WorkerDetail } from '@/lib/types';
 
 interface WorkerDetailModalProps {
@@ -19,6 +19,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showActivateModal, setShowActivateModal] = useState(false);
   const [showFullHistory, setShowFullHistory] = useState(false);
   const [newPassword, setNewPassword] = useState('');
 
@@ -172,6 +173,22 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
       await deactivateWorker(worker.id);
       setShowDeactivateModal(false);
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (!worker) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      await activateWorker(worker.id);
+      setShowActivateModal(false);
+      await fetchWorker();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
     } finally {
@@ -346,12 +363,21 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
                 <div className="border-t border-[#e5e5e5] pt-6">
                   <h3 className="mb-2 text-[#dc2626]">{TEXTS.workerDetail.sections.dangerZone}</h3>
                   <p className="text-sm text-[#666666] mb-4">{TEXTS.workerDetail.dangerZone.warning}</p>
-                  <button
-                    onClick={() => setShowDeactivateModal(true)}
-                    className="px-4 py-2 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] transition-colors"
-                  >
-                    {TEXTS.workerDetail.actions.deactivate}
-                  </button>
+                  {worker.is_active ? (
+                    <button
+                      onClick={() => setShowDeactivateModal(true)}
+                      className="px-4 py-2 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] transition-colors"
+                    >
+                      {TEXTS.workerDetail.actions.deactivate}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowActivateModal(true)}
+                      className="px-4 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] transition-colors"
+                    >
+                      {TEXTS.workerDetail.actions.activate}
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -413,6 +439,16 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
         <DeactivateWorkerModal
           onConfirm={handleDeactivate}
           onCancel={() => setShowDeactivateModal(false)}
+        />
+      )}
+
+      {showActivateModal && (
+        <ConfirmationModal
+          title={TEXTS.activateWorker.title}
+          message={TEXTS.activateWorker.message}
+          confirmText={TEXTS.activateWorker.confirm}
+          onConfirm={handleActivate}
+          onCancel={() => setShowActivateModal(false)}
         />
       )}
     </>

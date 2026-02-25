@@ -126,6 +126,7 @@ export const TEXTS = {
       cancel: 'Cancelar',
       changePassword: 'Cambiar contrasena',
       deactivate: 'Desactivar trabajador',
+      activate: 'Reactivar trabajador',
     },
     timeEvents: {
       noEvents: 'No hay eventos registrados',
@@ -162,6 +163,12 @@ export const TEXTS = {
       deactivate: 'Desactivar',
       cancel: 'Cancelar',
     },
+  },
+
+  activateWorker: {
+    title: 'Reactivar trabajador',
+    message: 'Esta accion habilitara de nuevo el acceso operativo del trabajador.',
+    confirm: 'Reactivar',
   },
 
   createWorker: {

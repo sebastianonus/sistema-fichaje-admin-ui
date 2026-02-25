@@ -110,6 +110,13 @@ export async function deactivateWorker(workerId: string) {
   return res.data;
 }
 
+export async function activateWorker(workerId: string) {
+  const res = await request<ApiEnvelope<{ worker_id: string; is_active: true }>>(`/admin-workers/${workerId}/activate`, {
+    method: "PATCH",
+  });
+  return res.data;
+}
+
 export async function changeWorkerPassword(workerId: string, password: string) {
   const res = await request<ApiEnvelope<{ worker_id: string }>>(`/admin-workers/${workerId}/password`, {
     method: "POST",
