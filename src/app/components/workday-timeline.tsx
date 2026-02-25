@@ -74,34 +74,30 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
       <h3 className="text-[#000935] font-semibold mb-4">{title}</h3>
 
       <div className="rounded-3xl border-4 border-[#00C9CE] bg-[#f7fbfd] p-5">
-        <div className="relative h-24">
-          <div className="absolute top-3 left-0 right-0 flex justify-between text-xs font-semibold text-[#00C9CE]">
-            <span>00:00</span>
-            <span>06:00</span>
-            <span>12:00</span>
-            <span>18:00</span>
-            <span>23:59</span>
+        <div className="relative h-28">
+          <div className="absolute top-1 left-0 right-0 text-center text-[44px] leading-none font-semibold text-[#2dc3d5]">
+            {new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
           </div>
 
-          <div className="absolute top-10 left-0 right-0 h-[5px] bg-[#9ca3af]" />
-          <div className="absolute top-[54px] left-0 right-0 h-[5px] bg-[#9ca3af]" />
+          <div className="absolute top-[68px] left-0 right-0 h-[6px] bg-[#9ca3af]" />
+          <div className="absolute top-[94px] left-0 right-0 h-[6px] bg-[#9ca3af]" />
 
           {processed.segments.map((s, i) => (
             <div
               key={`${s.start}-${s.end}-${i}`}
-              className="absolute top-[40px] h-6 rounded-full bg-[#2dc3d5]"
+              className="absolute top-[74px] h-5 rounded-full bg-[#2dc3d5]"
               style={{
                 left: `${(s.start / DAY_MINUTES) * 100}%`,
-                width: `${Math.max(((s.end - s.start) / DAY_MINUTES) * 100, 1.8)}%`,
+                width: `${Math.max(((s.end - s.start) / DAY_MINUTES) * 100, 2.6)}%`,
               }}
             />
           ))}
 
           {processed.hasOpenSegment && processed.openHandleMinute !== null && (
             <div
-              className="absolute top-[41px] h-[22px] w-[22px] rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_3px_#2dc3d5]"
+              className="absolute top-[71px] h-[24px] w-[24px] rounded-full border-[4px] border-white bg-[#7ee83d] shadow-[0_0_0_3px_#2dc3d5]"
               style={{
-                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 11px)`,
+                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 12px)`,
               }}
               aria-label="Punto actual de jornada"
               title={`Jornada activa - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
