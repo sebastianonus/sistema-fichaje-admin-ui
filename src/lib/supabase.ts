@@ -20,6 +20,10 @@ export async function getSessionAccessToken() {
 }
 
 export async function signInAdmin(email: string, password: string) {
+  return signInWithEmailPassword(email, password);
+}
+
+export async function signInWithEmailPassword(email: string, password: string) {
   if (!supabase) throw new Error("Cliente Supabase no configurado");
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
