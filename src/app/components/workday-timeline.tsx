@@ -83,44 +83,25 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
             <span>23:59</span>
           </div>
 
-          <div className="absolute top-11 left-0 right-0 h-5 rounded-full border-2 border-[#a3a3a3] bg-white" />
+          <div className="absolute top-10 left-0 right-0 h-[5px] bg-[#9ca3af]" />
+          <div className="absolute top-[54px] left-0 right-0 h-[5px] bg-[#9ca3af]" />
 
           {processed.segments.map((s, i) => (
             <div
               key={`${s.start}-${s.end}-${i}`}
-              className="absolute top-[47px] h-3 rounded-full bg-[#00C9CE]/70"
+              className="absolute top-[40px] h-6 rounded-full bg-[#2dc3d5]"
               style={{
                 left: `${(s.start / DAY_MINUTES) * 100}%`,
-                width: `${Math.max(((s.end - s.start) / DAY_MINUTES) * 100, 0.6)}%`,
+                width: `${Math.max(((s.end - s.start) / DAY_MINUTES) * 100, 1.8)}%`,
               }}
-            />
-          ))}
-
-          <div
-            className="absolute top-[38px] h-9 w-[2px] bg-[#111827]"
-            style={{ left: `${(nowMinute / DAY_MINUTES) * 100}%` }}
-            aria-label="Hora actual"
-            title={`Ahora: ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
-          />
-
-          {processed.markers.map((m) => (
-            <div
-              key={m.id}
-              className={`absolute top-[45px] h-4 w-[3px] rounded-full ${
-                m.type === "CLOCK_IN" ? "bg-[#16a34a]" : "bg-[#dc2626]"
-              }`}
-              style={{
-                left: `calc(${(m.minute / DAY_MINUTES) * 100}% - 1px)`,
-              }}
-              title={`${m.type} - ${m.timeLabel}`}
             />
           ))}
 
           {processed.hasOpenSegment && processed.openHandleMinute !== null && (
             <div
-              className="absolute top-[43px] h-[18px] w-[18px] rounded-full border-2 border-white bg-[#22c55e]/15 ring-1 ring-[#16a34a]/70"
+              className="absolute top-[41px] h-[22px] w-[22px] rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_3px_#2dc3d5]"
               style={{
-                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 9px)`,
+                left: `calc(${(processed.openHandleMinute / DAY_MINUTES) * 100}% - 11px)`,
               }}
               aria-label="Punto actual de jornada"
               title={`Jornada activa - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
