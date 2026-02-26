@@ -35,6 +35,10 @@ function formatMinutes(minutes: number) {
   return `${h}h ${m.toString().padStart(2, "0")}m`;
 }
 
+function dayKeyLocal(value: string) {
+  return new Date(value).toLocaleDateString("sv-SE");
+}
+
 export default function WorkerApp() {
   const [ready, setReady] = useState(false);
   const [authed, setAuthed] = useState(false);
@@ -52,6 +56,21 @@ export default function WorkerApp() {
   const isClockedIn = lastEvent === "CLOCK_IN";
 
   const workerName = useMemo(() => profile?.full_name || "Trabajador", [profile]);
+  const groupedEvents = useMemo(() => {
+    const grouped = new Map<string, WorkerEvent[]>();
+    for (const ev of events) {
+      const key = dayKeyLocal(ev.happened_at);
+      const bucket = grouped.get(key);
+      if (bucket) bucket.push(ev);
+      else grouped.set(key, [ev]);
+    }
+    return [...grouped.entries()].map(([key, dayEvents]) => ({
+      key,
+      label: new Date(`${key}T00:00:00`).toLocaleDateString("es-ES"),
+      events: dayEvents,
+    }));
+  }, [events]);
+
   const workedStats = useMemo(() => {
     const asc = [...events].sort(
       (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
@@ -273,18 +292,25 @@ export default function WorkerApp() {
           ) : events.length === 0 ? (
             <p className="text-sm text-[#666666]">Sin eventos registrados.</p>
           ) : (
-            <div className="space-y-2">
-              {events.map((ev) => (
-                <div key={ev.id} className="p-3 rounded-lg bg-[#f9f9f9] flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-[#000935]">{ev.event_type}</span>
-                    {ev.event_type === "CLOCK_OUT" && workedStats.durationByClockOutId.has(ev.id) && (
-                      <span className="text-xs text-[#0f766e]">
-                        Total tramo: {formatMinutes(workedStats.durationByClockOutId.get(ev.id) ?? 0)}
-                      </span>
-                    )}
+            <div className="space-y-3">
+              {groupedEvents.map((group) => (
+                <div key={group.key} className="border border-[#e5e5e5] rounded-lg p-3 bg-white">
+                  <div className="text-xs font-semibold text-[#0f766e] mb-2">Jornada {group.label}</div>
+                  <div className="space-y-2">
+                    {group.events.map((ev) => (
+                      <div key={ev.id} className="p-3 rounded-lg bg-[#f9f9f9] flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-[#000935]">{ev.event_type}</span>
+                          {ev.event_type === "CLOCK_OUT" && workedStats.durationByClockOutId.has(ev.id) && (
+                            <span className="text-xs text-[#0f766e]">
+                              Total tramo: {formatMinutes(workedStats.durationByClockOutId.get(ev.id) ?? 0)}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm text-[#666666]">{new Date(ev.happened_at).toLocaleString("es-ES")}</span>
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-sm text-[#666666]">{new Date(ev.happened_at).toLocaleString("es-ES")}</span>
                 </div>
               ))}
             </div>

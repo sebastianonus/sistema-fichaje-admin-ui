@@ -62,6 +62,21 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     return byDate.slice(0, maxEvents);
   }, [worker?.time_events, dateFrom, dateTo, maxEvents]);
 
+  const groupedFilteredEvents = useMemo(() => {
+    const grouped = new Map<string, WorkerDetail['time_events']>();
+    for (const ev of filteredEvents) {
+      const key = localDay(ev.happened_at);
+      const bucket = grouped.get(key);
+      if (bucket) bucket.push(ev);
+      else grouped.set(key, [ev]);
+    }
+    return [...grouped.entries()].map(([key, dayEvents]) => ({
+      key,
+      label: new Date(`${key}T00:00:00`).toLocaleDateString('es-ES'),
+      events: dayEvents,
+    }));
+  }, [filteredEvents]);
+
   const handleDeactivate = async () => {
     if (!worker) return;
     try {
@@ -214,13 +229,20 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 {filteredEvents.length === 0 ? (
                   <p className="text-[#666666] text-sm">{TEXTS.workerDetail.timeEvents.noEvents}</p>
                 ) : (
-                  filteredEvents.map((event) => (
-                    <div key={event.id} className="flex justify-between items-start p-3 bg-[#f9f9f9] rounded-lg">
-                      <div>
-                        <div className="font-medium text-[#000935]">{event.event_type}</div>
-                        {event.note && <div className="text-sm text-[#666666] mt-1">{event.note}</div>}
+                  groupedFilteredEvents.map((group) => (
+                    <div key={group.key} className="border border-[#e5e5e5] rounded-lg p-3 bg-white">
+                      <div className="text-xs font-semibold text-[#0f766e] mb-2">Jornada {group.label}</div>
+                      <div className="space-y-2">
+                        {group.events.map((event) => (
+                          <div key={event.id} className="flex justify-between items-start p-3 bg-[#f9f9f9] rounded-lg">
+                            <div>
+                              <div className="font-medium text-[#000935]">{event.event_type}</div>
+                              {event.note && <div className="text-sm text-[#666666] mt-1">{event.note}</div>}
+                            </div>
+                            <div className="text-sm text-[#666666]">{new Date(event.happened_at).toLocaleString('es-ES')}</div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="text-sm text-[#666666]">{new Date(event.happened_at).toLocaleString('es-ES')}</div>
                     </div>
                   ))
                 )}
