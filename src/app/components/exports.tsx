@@ -2,8 +2,8 @@
 import { Download, Plus, FileText, AlertTriangle, Calendar } from 'lucide-react';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { TEXTS } from '@/constants/texts';
-import { createExport, getExportSignedUrl, getExports, revokeExport } from '@/lib/api';
-import type { ExportRecord } from '@/lib/types';
+import { createExport, getExportSignedUrl, getExports, getWorkers, revokeExport } from '@/lib/api';
+import type { ExportRecord, WorkerSummary } from '@/lib/types';
 
 function getReadableCreatorName(exp: ExportRecord) {
   const name = exp.created_by_name?.trim();
@@ -227,8 +227,30 @@ interface CreateExportModalProps {
 function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [workerId, setWorkerId] = useState('');
+  const [workers, setWorkers] = useState<WorkerSummary[]>([]);
+  const [workersLoading, setWorkersLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadWorkers() {
+      try {
+        setWorkersLoading(true);
+        const data = await getWorkers({});
+        if (!cancelled) setWorkers(data);
+      } catch {
+        if (!cancelled) setWorkers([]);
+      } finally {
+        if (!cancelled) setWorkersLoading(false);
+      }
+    }
+    loadWorkers();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,7 +258,11 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
     try {
       setIsSubmitting(true);
       setError(null);
-      const created = await createExport({ from: dateFrom, to: dateTo });
+      const created = await createExport({
+        from: dateFrom,
+        to: dateTo,
+        worker_id: workerId || undefined,
+      });
       window.open(created.signed_url, '_blank', 'noopener,noreferrer');
       onCreated?.();
     } catch (err) {
@@ -297,6 +323,23 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
                 required
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block mb-2">Trabajador (opcional)</label>
+            <select
+              value={workerId}
+              onChange={(e) => setWorkerId(e.target.value)}
+              disabled={workersLoading}
+              className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE] disabled:opacity-60"
+            >
+              <option value="">Todos los trabajadores</option>
+              {workers.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.full_name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {dateFrom && dateTo && dateFrom > dateTo && (
