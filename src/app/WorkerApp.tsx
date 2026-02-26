@@ -317,15 +317,15 @@ export default function WorkerApp() {
             <p className="text-sm text-[#666666]">Sin eventos registrados.</p>
           ) : (
             <div className="space-y-3">
-              {groupedEvents.map((group) => (
-                <div key={group.key} className="border border-[#e5e5e5] rounded-lg p-3 bg-white">
-                  <div className="flex items-center justify-between text-xs font-semibold mb-2">
+              {groupedEvents.map((group, idx) => (
+                <details key={group.key} className="border border-[#e5e5e5] rounded-lg bg-white" open={idx === 0}>
+                  <summary className="list-none cursor-pointer p-3 flex items-center justify-between text-xs font-semibold">
                     <span className="text-[#0f766e]">Jornada {group.label}</span>
                     <span className="text-[#475569]">
                       Total: {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : "Sin tramos cerrados"}
                     </span>
-                  </div>
-                  <div className="space-y-2">
+                  </summary>
+                  <div className="px-3 pb-3 space-y-2">
                     {group.events.map((ev) => (
                       <div key={ev.id} className="p-3 rounded-lg bg-[#f9f9f9] flex items-center justify-between">
                         <div className="flex flex-col">
@@ -340,7 +340,7 @@ export default function WorkerApp() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </details>
               ))}
             </div>
           )}

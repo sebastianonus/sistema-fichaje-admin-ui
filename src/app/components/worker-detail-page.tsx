@@ -259,15 +259,15 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 {filteredEvents.length === 0 ? (
                   <p className="text-[#666666] text-sm">{TEXTS.workerDetail.timeEvents.noEvents}</p>
                 ) : (
-                  groupedFilteredEvents.map((group) => (
-                    <div key={group.key} className="border border-[#e5e5e5] rounded-lg p-3 bg-white">
-                      <div className="flex items-center justify-between text-xs font-semibold mb-2">
+                  groupedFilteredEvents.map((group, idx) => (
+                    <details key={group.key} className="border border-[#e5e5e5] rounded-lg bg-white" open={idx === 0}>
+                      <summary className="list-none cursor-pointer p-3 flex items-center justify-between text-xs font-semibold">
                         <span className="text-[#0f766e]">Jornada {group.label}</span>
                         <span className="text-[#475569]">
                           Total: {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : 'Sin tramos cerrados'}
                         </span>
-                      </div>
-                      <div className="space-y-2">
+                      </summary>
+                      <div className="px-3 pb-3 space-y-2">
                         {group.events.map((event) => (
                           <div key={event.id} className="flex justify-between items-start p-3 bg-[#f9f9f9] rounded-lg">
                             <div>
@@ -278,7 +278,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </details>
                   ))
                 )}
               </div>
