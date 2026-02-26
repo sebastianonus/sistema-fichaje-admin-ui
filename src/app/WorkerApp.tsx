@@ -85,13 +85,20 @@ export default function WorkerApp() {
   const [resetNewPassword, setResetNewPassword] = useState("");
   const [resetSaving, setResetSaving] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [dismissedResetModal, setDismissedResetModal] = useState(false);
 
   const lastEvent = events[0]?.event_type ?? null;
   const isClockedIn = lastEvent === "CLOCK_IN";
 
   const mustChangePassword = profile?.password_reset_required === true;
   const resetDeadline = profile?.password_reset_deadline ? new Date(profile.password_reset_deadline) : null;
+  const deadlineDayStart = resetDeadline
+    ? new Date(resetDeadline.getFullYear(), resetDeadline.getMonth(), resetDeadline.getDate()).getTime()
+    : null;
+  const isDeadlineDayOrLater = deadlineDayStart !== null ? Date.now() >= deadlineDayStart : false;
   const resetDeadlineExpired = resetDeadline ? Date.now() > resetDeadline.getTime() : false;
+  const showPasswordResetModal = mustChangePassword && (!dismissedResetModal || isDeadlineDayOrLater);
+  const canClosePasswordResetModal = mustChangePassword && !isDeadlineDayOrLater;
 
   const workerName = useMemo(() => profile?.full_name || "Trabajador", [profile]);
   const groupedEvents = useMemo(() => {
@@ -198,6 +205,12 @@ export default function WorkerApp() {
     }, 30 * 60 * 1000);
     return () => window.clearInterval(id);
   }, [authed]);
+
+  useEffect(() => {
+    if (!mustChangePassword) {
+      setDismissedResetModal(false);
+    }
+  }, [mustChangePassword]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,18 +434,35 @@ export default function WorkerApp() {
         </div>
       </div>
 
-      {mustChangePassword && (
+      {showPasswordResetModal && (
         <div className="fixed inset-0 z-50 bg-[#000935]/65 backdrop-blur-[2px] flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white border border-[#d9e3ee] rounded-2xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-5 bg-[#00C9CE] text-white">
-              <h2 className="text-xl font-bold text-white">Cambio obligatorio de contrasena</h2>
-              <p className="text-sm text-white/90 mt-1">
-                {resetDeadline
-                  ? `Debes actualizar tu contrasena antes de ${resetDeadline.toLocaleDateString("es-ES")}.`
-                  : "Debes actualizar tu contrasena para continuar."}
-              </p>
-              {resetDeadlineExpired && (
-                <p className="text-sm font-semibold text-white mt-2">Plazo vencido. Debes cambiarla ahora.</p>
+            <div className="px-6 py-5 bg-[#00C9CE] text-white flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-white">Cambio obligatorio de contrasena</h2>
+                <p className="text-sm text-white/90 mt-1">
+                  {resetDeadline
+                    ? `Debes actualizar tu contrasena antes de ${resetDeadline.toLocaleDateString("es-ES")}.`
+                    : "Debes actualizar tu contrasena para continuar."}
+                </p>
+                {canClosePasswordResetModal && (
+                  <p className="text-xs text-white/85 mt-2">
+                    Puedes cerrarlo por ahora, pero en el dia limite quedara bloqueado hasta cambiarla.
+                  </p>
+                )}
+                {resetDeadlineExpired && (
+                  <p className="text-sm font-semibold text-white mt-2">Plazo vencido. Debes cambiarla ahora.</p>
+                )}
+              </div>
+              {canClosePasswordResetModal && (
+                <button
+                  type="button"
+                  onClick={() => setDismissedResetModal(true)}
+                  className="shrink-0 rounded-md border border-white/60 px-2 py-1 text-white hover:bg-white/10"
+                  aria-label="Cerrar aviso de cambio obligatorio de contrasena"
+                >
+                  X
+                </button>
               )}
             </div>
             <form onSubmit={handleMandatoryPasswordChange} className="p-6 space-y-4">
