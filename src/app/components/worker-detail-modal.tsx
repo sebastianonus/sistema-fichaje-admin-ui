@@ -48,7 +48,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
   useEffect(() => {
     const id = window.setInterval(() => {
       fetchWorker();
-    }, 15000);
+    }, 10 * 60 * 1000);
     return () => window.clearInterval(id);
   }, [workerId]);
 
