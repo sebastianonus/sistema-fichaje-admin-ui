@@ -70,6 +70,7 @@ export const TEXTS = {
       columns: {
         nombre: 'Nombre',
         email: 'Email',
+        telefono: 'Telefono',
         activo: 'Activo',
         creado: 'Creado',
         ultimoEvento: 'Ultimo evento',
@@ -98,6 +99,7 @@ export const TEXTS = {
     actions: {
       filters: 'Filtros',
       createWorker: 'Crear trabajador',
+      sendCredentials: 'Enviar credenciales',
       clearFilters: 'Limpiar filtros',
     },
   },
@@ -113,6 +115,7 @@ export const TEXTS = {
     fields: {
       nombre: 'Nombre',
       email: 'Email',
+      telefono: 'Telefono',
       estado: 'Estado',
       uuid: 'UUID',
     },
@@ -176,10 +179,12 @@ export const TEXTS = {
     fields: {
       fullName: 'Nombre completo',
       email: 'Email',
+      phone: 'Telefono',
       password: 'Contrasena inicial',
       placeholders: {
         fullName: 'Introduce el nombre completo',
         email: 'correo@ejemplo.com',
+        phone: '+34 600000000',
         password: 'Introduce la contrasena',
       },
     },

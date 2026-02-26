@@ -3,7 +3,7 @@ import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { TEXTS } from '@/constants/texts';
-import { activateWorker, changeWorkerPassword, deactivateWorker, getWorker } from '@/lib/api';
+import { activateWorker, changeWorkerPassword, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
 import type { WorkerDetail } from '@/lib/types';
 
 interface WorkerDetailPageProps {
@@ -58,6 +58,8 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState('');
 
   const fetchWorker = async () => {
     try {
@@ -65,6 +67,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setError(null);
       const data = await getWorker(workerId);
       setWorker(data);
+      setPhoneDraft(data.phone_number ?? '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
     } finally {
@@ -152,6 +155,21 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     }
   };
 
+  const handlePhoneSave = async () => {
+    if (!worker) return;
+    try {
+      setSaving(true);
+      setError(null);
+      await updateWorker(worker.id, { phone_number: phoneDraft.trim() });
+      setEditingPhone(false);
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="p-8 space-y-6">
@@ -173,7 +191,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
           <>
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
               <h3 className="mb-4">{TEXTS.workerDetail.sections.basicInfo}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.nombre}</label>
                   <p className="text-[#000935]">{worker.full_name}</p>
@@ -181,6 +199,46 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.email}</label>
                   <p className="text-[#000935]">{worker.email || TEXTS.common.noData}</p>
+                </div>
+                <div>
+                  <label className="block mb-2">{TEXTS.workerDetail.fields.telefono}</label>
+                  {editingPhone ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        value={phoneDraft}
+                        onChange={(e) => setPhoneDraft(e.target.value)}
+                        placeholder="+34 600000000"
+                        className="px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                      />
+                      <button
+                        onClick={handlePhoneSave}
+                        disabled={saving}
+                        className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPhoneDraft(worker.phone_number ?? '');
+                          setEditingPhone(false);
+                        }}
+                        className="px-3 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5]"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-[#000935]">{worker.phone_number || TEXTS.common.noData}</p>
+                      <button
+                        onClick={() => setEditingPhone(true)}
+                        className="text-[#00C9CE] hover:underline"
+                      >
+                        Editar
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.estado}</label>

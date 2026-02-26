@@ -84,6 +84,7 @@ export async function createWorker(worker: {
   full_name: string;
   email: string;
   password: string;
+  phone_number?: string;
 }) {
   const res = await request<ApiEnvelope<{ worker_id: string; temp_password: string | null }>>("/admin-users", {
     method: "POST",
@@ -95,6 +96,7 @@ export async function createWorker(worker: {
 export async function updateWorker(workerId: string, updates: {
   full_name?: string;
   email?: string;
+  phone_number?: string;
 }) {
   const res = await request<ApiEnvelope<{ worker_id: string }>>(`/admin-workers/${workerId}`, {
     method: "PATCH",
@@ -121,6 +123,26 @@ export async function changeWorkerPassword(workerId: string, password: string) {
   const res = await request<ApiEnvelope<{ worker_id: string }>>(`/admin-workers/${workerId}/password`, {
     method: "POST",
     body: JSON.stringify({ password }),
+  });
+  return res.data;
+}
+
+export async function sendWorkerOnboardingMessages(workerIds: string[]) {
+  const res = await request<ApiEnvelope<{
+    results: Array<{
+      worker_id: string;
+      full_name: string;
+      phone_number: string | null;
+      status: "READY" | "READY_NO_PHONE" | "PASSWORD_UPDATE_FAILED" | "PROFILE_UPDATE_FAILED";
+      temp_password?: string;
+      password_reset_deadline?: string;
+      message?: string;
+      whatsapp_url?: string | null;
+      error?: string;
+    }>;
+  }>>("/admin-workers/onboarding-message", {
+    method: "POST",
+    body: JSON.stringify({ worker_ids: workerIds }),
   });
   return res.data;
 }

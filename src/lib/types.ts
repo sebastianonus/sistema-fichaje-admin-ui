@@ -13,6 +13,7 @@ export interface WorkerSummary {
   id: string;
   full_name: string;
   email: string;
+  phone_number?: string | null;
   is_active: boolean;
   created_at: string;
   last_event: {
@@ -25,6 +26,7 @@ export interface WorkerDetail {
   id: string;
   full_name: string;
   email: string;
+  phone_number?: string | null;
   is_active: boolean;
   created_at: string;
   time_events: Array<{

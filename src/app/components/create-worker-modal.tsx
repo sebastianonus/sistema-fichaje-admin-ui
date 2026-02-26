@@ -11,6 +11,7 @@ interface CreateWorkerModalProps {
 export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +25,7 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
       await createWorker({
         full_name: fullName.trim(),
         email: email.trim(),
+        phone_number: phone.trim(),
         password: password.trim(),
       });
       onCreated?.();
@@ -34,7 +36,7 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
     }
   };
 
-  const isValid = fullName.trim() && email.trim() && password.trim();
+  const isValid = fullName.trim() && email.trim() && phone.trim() && password.trim();
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -70,6 +72,20 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={TEXTS.createWorker.fields.placeholders.email}
+              className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block mb-2">
+              {TEXTS.createWorker.fields.phone} <span className="text-[#dc2626]">{TEXTS.createWorker.required}</span>
+            </label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={TEXTS.createWorker.fields.placeholders.phone}
               className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
               required
             />
