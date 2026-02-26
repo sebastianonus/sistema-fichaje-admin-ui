@@ -21,6 +21,24 @@ export const supabase =
 
 export type UserRole = "admin" | "worker";
 
+export function getFriendlyAuthError(error: unknown, fallback = "Error de autenticacion") {
+  const raw = error instanceof Error ? error.message : String(error ?? "");
+  const msg = raw.trim();
+  if (!msg) return fallback;
+
+  if (/email logins are disabled/i.test(msg)) {
+    return "El acceso por email esta desactivado en Supabase. Activa Authentication > Providers > Email para poder iniciar sesion.";
+  }
+  if (/invalid login credentials/i.test(msg)) {
+    return "Email o contrasena incorrectos.";
+  }
+  if (/email not confirmed/i.test(msg)) {
+    return "Tu correo aun no esta confirmado.";
+  }
+
+  return msg;
+}
+
 function isTokenExpired(jwt: string) {
   const parts = jwt.split(".");
   if (parts.length !== 3) return true;
