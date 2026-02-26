@@ -86,7 +86,7 @@ export default function WorkerApp() {
     if (!authed) return;
     const id = window.setInterval(() => {
       load();
-    }, 15000);
+    }, 30 * 60 * 1000);
     return () => window.clearInterval(id);
   }, [authed]);
 
