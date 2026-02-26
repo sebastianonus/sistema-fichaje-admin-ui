@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Clock3, Eye, EyeOff, LogIn, LogOut, User } from "lucide-react";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User } from "lucide-react";
 import { ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
@@ -234,45 +234,63 @@ export default function WorkerApp() {
           backgroundImage: `linear-gradient(rgba(0, 9, 53, 0.66), rgba(0, 9, 53, 0.5)), url(${workerLoginBg})`,
         }}
       >
-        <form onSubmit={handleLogin} className="bg-white/92 backdrop-blur-[2px] border border-[#d9e3ee] rounded-xl p-6 w-full max-w-md space-y-4 shadow-xl">
-          <img src={logo} alt="ONUS" className="h-8" />
-          <h1 className="text-2xl font-bold text-[#000935]">Portal trabajador</h1>
-          <p className="text-sm text-[#666666]">Inicia sesion para fichar entrada y salida</p>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="trabajador@empresa.com"
-            className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
-            required
-          />
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-              className="w-full px-3 pr-10 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#666666] hover:text-[#000935]"
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+        <div className="w-full max-w-md bg-white/92 backdrop-blur-[2px] rounded-2xl shadow-2xl border border-[#d9e3ee] overflow-hidden">
+          <div className="px-6 py-5 bg-[#00C9CE] text-white">
+            <img src={logo} alt="ONUS" className="h-8 mb-3 brightness-0 invert" />
+            <h1 className="text-white text-2xl font-bold">Acceso mensajero</h1>
+            <p className="text-white/90 mt-1">Inicia sesion para fichar entrada y salida</p>
           </div>
-          {error && <p className="text-sm text-[#dc2626]">{error}</p>}
-          <button
-            type="submit"
-            disabled={loginLoading || !email.trim() || !password.trim()}
-            className="w-full px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
-          >
-            {loginLoading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
+
+          <form onSubmit={handleLogin} className="p-6 space-y-4">
+            <div>
+              <label className="block mb-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="trabajador@empresa.com"
+                  className="w-full pl-10 pr-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block mb-2">Contrasena</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="********"
+                  className="w-full pl-10 pr-10 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#666666] hover:text-[#000935]"
+                  aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-[#dc2626]">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loginLoading || !email.trim() || !password.trim()}
+              className="w-full px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+            >
+              {loginLoading ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -370,3 +388,4 @@ export default function WorkerApp() {
     </div>
   );
 }
+
