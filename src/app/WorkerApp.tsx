@@ -4,6 +4,7 @@ import { ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supaba
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
+import workerLoginBg from "@/assets/login/worker-login-bg.jpg";
 
 interface WorkerProfile {
   id: string;
@@ -227,8 +228,13 @@ export default function WorkerApp() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#000935] via-[#0a1b6a] to-[#00C9CE]/20 flex items-center justify-center p-4">
-        <form onSubmit={handleLogin} className="bg-white border border-[#e5e5e5] rounded-xl p-6 w-full max-w-md space-y-4 shadow-xl">
+      <div
+        className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 9, 53, 0.66), rgba(0, 9, 53, 0.5)), url(${workerLoginBg})`,
+        }}
+      >
+        <form onSubmit={handleLogin} className="bg-white/92 backdrop-blur-[2px] border border-[#d9e3ee] rounded-xl p-6 w-full max-w-md space-y-4 shadow-xl">
           <img src={logo} alt="ONUS" className="h-8" />
           <h1 className="text-2xl font-bold text-[#000935]">Portal trabajador</h1>
           <p className="text-sm text-[#666666]">Inicia sesion para fichar entrada y salida</p>

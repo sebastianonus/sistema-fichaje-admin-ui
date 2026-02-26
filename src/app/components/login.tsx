@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { TEXTS } from "@/constants/texts";
 import { signInWithRole } from "@/lib/supabase";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
+import adminLoginBg from "@/assets/login/admin-login-bg.jpg";
 
 interface LoginProps {
   onSuccess: () => void;
@@ -34,8 +35,13 @@ export function Login({ onSuccess }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#000935] via-[#0a1b6a] to-[#00C9CE]/25 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0, 9, 53, 0.6), rgba(0, 9, 53, 0.55)), url(${adminLoginBg})`,
+      }}
+    >
+      <div className="w-full max-w-md bg-white/92 backdrop-blur-[2px] rounded-2xl shadow-2xl border border-[#d9e3ee] overflow-hidden">
         <div className="px-6 py-5 bg-[#000935] text-white">
           <img src={logo} alt="ONUS" className="h-8 mb-3" />
           <h1 className="text-white text-2xl font-bold">{TEXTS.login.title}</h1>
