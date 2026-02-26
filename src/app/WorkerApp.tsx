@@ -336,7 +336,9 @@ export default function WorkerApp() {
                             </span>
                           )}
                         </div>
-                        <span className="text-sm text-[#666666]">{new Date(ev.happened_at).toLocaleString("es-ES")}</span>
+                        <span className="text-sm text-[#666666]">
+                          {new Date(ev.happened_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
                       </div>
                     ))}
                   </div>

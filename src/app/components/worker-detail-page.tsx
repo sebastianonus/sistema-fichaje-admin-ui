@@ -274,7 +274,9 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                               <div className="font-medium text-[#000935]">{event.event_type}</div>
                               {event.note && <div className="text-sm text-[#666666] mt-1">{event.note}</div>}
                             </div>
-                            <div className="text-sm text-[#666666]">{new Date(event.happened_at).toLocaleString('es-ES')}</div>
+                            <div className="text-sm text-[#666666]">
+                              {new Date(event.happened_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
                           </div>
                         ))}
                       </div>
