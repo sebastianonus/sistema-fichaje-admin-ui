@@ -278,7 +278,8 @@ export const TEXTS = {
     password: {
       title: 'Seguridad de sesion',
       userLabel: 'Usuario actual',
-      placeholder: 'Nueva contrasena',
+      currentPlaceholder: 'Contrasena actual',
+      newPlaceholder: 'Nueva contrasena',
       action: 'Actualizar contrasena',
       success: 'Contrasena actualizada correctamente',
     },

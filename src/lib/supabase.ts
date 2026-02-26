@@ -102,3 +102,19 @@ export async function signInWithRole(email: string, password: string, role: User
   await ensureRole(role);
   return session;
 }
+
+export async function changeCurrentUserPassword(currentPassword: string, newPassword: string) {
+  if (!supabase) throw new Error("Cliente Supabase no configurado");
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userData.user) throw new Error("Usuario no autenticado");
+  if (!userData.user.email) throw new Error("Usuario sin email");
+
+  const { error: verifyErr } = await supabase.auth.signInWithPassword({
+    email: userData.user.email,
+    password: currentPassword,
+  });
+  if (verifyErr) throw new Error("La contrasena actual no es valida");
+
+  const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
+  if (updateErr) throw updateErr;
+}

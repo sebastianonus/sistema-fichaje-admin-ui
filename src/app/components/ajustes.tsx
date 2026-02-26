@@ -2,11 +2,12 @@
 import { CheckCircle2, Shield, Server, RefreshCw } from 'lucide-react';
 import { TEXTS } from '@/constants/texts';
 import { getDashboardMetrics, getExports, getWorkers } from '@/lib/api';
-import { hasStaticAdminToken, supabase } from '@/lib/supabase';
+import { changeCurrentUserPassword, hasStaticAdminToken, supabase } from '@/lib/supabase';
 
 export function Ajustes() {
   const [email, setEmail] = useState<string | null>(null);
-  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
   const [passwordErr, setPasswordErr] = useState<string | null>(null);
@@ -60,15 +61,15 @@ export function Ajustes() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password.trim() || !supabase || authMode !== 'session') return;
+    if (!currentPassword.trim() || !newPassword.trim() || !supabase || authMode !== 'session') return;
 
     try {
       setSavingPassword(true);
       setPasswordErr(null);
       setPasswordMsg(null);
-      const { error } = await supabase.auth.updateUser({ password: password.trim() });
-      if (error) throw error;
-      setPassword('');
+      await changeCurrentUserPassword(currentPassword.trim(), newPassword.trim());
+      setCurrentPassword('');
+      setNewPassword('');
       setPasswordMsg(TEXTS.ajustes.password.success);
     } catch (err) {
       setPasswordErr(err instanceof Error ? err.message : 'Error inesperado');
@@ -129,15 +130,23 @@ export function Ajustes() {
           <form onSubmit={handlePasswordChange} className="space-y-3 max-w-md">
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
               className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
-              placeholder={TEXTS.ajustes.password.placeholder}
+              placeholder={TEXTS.ajustes.password.currentPlaceholder}
+              required
+            />
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+              placeholder={TEXTS.ajustes.password.newPlaceholder}
               required
             />
             <button
               type="submit"
-              disabled={!password.trim() || savingPassword}
+              disabled={!currentPassword.trim() || !newPassword.trim() || savingPassword}
               className="px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] transition-colors disabled:opacity-50"
             >
               {savingPassword ? TEXTS.createWorker.actions.creating : TEXTS.ajustes.password.action}
