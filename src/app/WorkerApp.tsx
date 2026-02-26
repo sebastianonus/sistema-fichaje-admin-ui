@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
-import { changeCurrentUserPassword, ensureRole, getFriendlyAuthError, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
+import { changeCurrentUserPassword, ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
@@ -221,7 +221,7 @@ export default function WorkerApp() {
       setAuthed(true);
       await load();
     } catch (err) {
-      setError(getFriendlyAuthError(err, "No se pudo iniciar sesion"));
+      setError(err instanceof Error ? err.message : "No se pudo iniciar sesion");
     } finally {
       setLoginLoading(false);
     }

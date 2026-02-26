@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { TEXTS } from "@/constants/texts";
-import { getFriendlyAuthError, signInWithRole } from "@/lib/supabase";
+import { signInWithRole } from "@/lib/supabase";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
 import adminLoginBg from "@/assets/login/admin-login-bg.jpg";
 
@@ -28,7 +28,7 @@ export function Login({ onSuccess }: LoginProps) {
       await signInWithRole(email.trim(), password, "admin");
       onSuccess();
     } catch (err) {
-      setError(getFriendlyAuthError(err, "Error de autenticacion"));
+      setError(err instanceof Error ? err.message : "Error de autenticación");
     } finally {
       setLoading(false);
     }
@@ -105,4 +105,3 @@ export function Login({ onSuccess }: LoginProps) {
     </div>
   );
 }
-
