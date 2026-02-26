@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock3, LogIn, LogOut, User } from "lucide-react";
+import { Clock3, Eye, EyeOff, LogIn, LogOut, User } from "lucide-react";
 import { ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
+import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
 
 interface WorkerProfile {
   id: string;
@@ -73,6 +74,7 @@ export default function WorkerApp() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
   const lastEvent = events[0]?.event_type ?? null;
@@ -227,6 +229,7 @@ export default function WorkerApp() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#000935] via-[#0a1b6a] to-[#00C9CE]/20 flex items-center justify-center p-4">
         <form onSubmit={handleLogin} className="bg-white border border-[#e5e5e5] rounded-xl p-6 w-full max-w-md space-y-4 shadow-xl">
+          <img src={logo} alt="ONUS" className="h-8" />
           <h1 className="text-2xl font-bold text-[#000935]">Portal trabajador</h1>
           <p className="text-sm text-[#666666]">Inicia sesion para fichar entrada y salida</p>
           <input
@@ -237,14 +240,24 @@ export default function WorkerApp() {
             className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
             required
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="********"
-            className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
+              className="w-full px-3 pr-10 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#666666] hover:text-[#000935]"
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           {error && <p className="text-sm text-[#dc2626]">{error}</p>}
           <button
             type="submit"

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { TEXTS } from "@/constants/texts";
 import { signInWithRole } from "@/lib/supabase";
+import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
 
 interface LoginProps {
   onSuccess: () => void;
@@ -12,6 +13,7 @@ export function Login({ onSuccess }: LoginProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const canSubmit = email.trim() && password.trim() && !loading;
 
@@ -35,6 +37,7 @@ export function Login({ onSuccess }: LoginProps) {
     <div className="min-h-screen bg-gradient-to-br from-[#000935] via-[#0a1b6a] to-[#00C9CE]/25 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden">
         <div className="px-6 py-5 bg-[#000935] text-white">
+          <img src={logo} alt="ONUS" className="h-8 mb-3" />
           <h1 className="text-white text-2xl font-bold">{TEXTS.login.title}</h1>
           <p className="text-white/80 mt-1">{TEXTS.login.subtitle}</p>
         </div>
@@ -60,13 +63,21 @@ export function Login({ onSuccess }: LoginProps) {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+                className="w-full pl-10 pr-10 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
                 placeholder="********"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#666666] hover:text-[#000935]"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

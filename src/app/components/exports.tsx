@@ -228,6 +228,7 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [workerId, setWorkerId] = useState('');
+  const [timezone, setTimezone] = useState<'peninsula' | 'canarias'>('peninsula');
   const [workers, setWorkers] = useState<WorkerSummary[]>([]);
   const [workersLoading, setWorkersLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -262,6 +263,7 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
         from: dateFrom,
         to: dateTo,
         worker_id: workerId || undefined,
+        timezone,
       });
       window.open(created.signed_url, '_blank', 'noopener,noreferrer');
       onCreated?.();
@@ -339,6 +341,18 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
                   {w.full_name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block mb-2">Zona horaria</label>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value as 'peninsula' | 'canarias')}
+              className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+            >
+              <option value="peninsula">Península (Madrid)</option>
+              <option value="canarias">Islas Canarias</option>
             </select>
           </div>
 

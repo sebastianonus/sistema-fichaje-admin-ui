@@ -134,6 +134,7 @@ export async function createExport(payload: {
   from: string;
   to: string;
   worker_id?: string;
+  timezone?: "peninsula" | "canarias";
 }) {
   const normalizedPayload = {
     ...payload,
