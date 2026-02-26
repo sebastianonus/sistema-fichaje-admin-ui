@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User } from "lucide-react";
+import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
 import { changeCurrentUserPassword, ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
@@ -458,10 +458,11 @@ export default function WorkerApp() {
                 <button
                   type="button"
                   onClick={() => setDismissedResetModal(true)}
-                  className="shrink-0 rounded-md border border-white/60 px-2 py-1 text-white hover:bg-white/10"
+                  className="shrink-0 h-8 w-8 inline-flex items-center justify-center rounded-full border border-white/80 text-white !bg-transparent hover:bg-white/15"
+                  style={{ backgroundColor: "transparent" }}
                   aria-label="Cerrar aviso de cambio obligatorio de contrasena"
                 >
-                  X
+                  <X className="h-4 w-4" strokeWidth={2.5} />
                 </button>
               )}
             </div>
