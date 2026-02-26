@@ -39,6 +39,29 @@ function dayKeyLocal(value: string) {
   return new Date(value).toLocaleDateString("sv-SE");
 }
 
+function closedMinutesFromEvents(dayEvents: WorkerEvent[]) {
+  const asc = [...dayEvents].sort(
+    (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
+  );
+  let openIn: WorkerEvent | null = null;
+  let total = 0;
+  for (const ev of asc) {
+    if (ev.event_type === "CLOCK_IN") {
+      openIn = ev;
+      continue;
+    }
+    if (ev.event_type === "CLOCK_OUT" && openIn) {
+      const minutes = Math.max(
+        0,
+        Math.round((new Date(ev.happened_at).getTime() - new Date(openIn.happened_at).getTime()) / 60000),
+      );
+      total += minutes;
+      openIn = null;
+    }
+  }
+  return total;
+}
+
 export default function WorkerApp() {
   const [ready, setReady] = useState(false);
   const [authed, setAuthed] = useState(false);
@@ -68,6 +91,7 @@ export default function WorkerApp() {
       key,
       label: new Date(`${key}T00:00:00`).toLocaleDateString("es-ES"),
       events: dayEvents,
+      totalClosedMinutes: closedMinutesFromEvents(dayEvents),
     }));
   }, [events]);
 
@@ -295,7 +319,12 @@ export default function WorkerApp() {
             <div className="space-y-3">
               {groupedEvents.map((group) => (
                 <div key={group.key} className="border border-[#e5e5e5] rounded-lg p-3 bg-white">
-                  <div className="text-xs font-semibold text-[#0f766e] mb-2">Jornada {group.label}</div>
+                  <div className="flex items-center justify-between text-xs font-semibold mb-2">
+                    <span className="text-[#0f766e]">Jornada {group.label}</span>
+                    <span className="text-[#475569]">
+                      Total: {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : "Sin tramos cerrados"}
+                    </span>
+                  </div>
                   <div className="space-y-2">
                     {group.events.map((ev) => (
                       <div key={ev.id} className="p-3 rounded-lg bg-[#f9f9f9] flex items-center justify-between">

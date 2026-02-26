@@ -15,6 +15,35 @@ function localDay(value: string) {
   return new Date(value).toLocaleDateString('sv-SE');
 }
 
+function formatMinutes(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h ${m.toString().padStart(2, '0')}m`;
+}
+
+function closedMinutesFromEvents(events: WorkerDetail['time_events']) {
+  const asc = [...events].sort(
+    (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
+  );
+  let openIn: WorkerDetail['time_events'][number] | null = null;
+  let total = 0;
+  for (const ev of asc) {
+    if (ev.event_type === 'CLOCK_IN') {
+      openIn = ev;
+      continue;
+    }
+    if (ev.event_type === 'CLOCK_OUT' && openIn) {
+      const minutes = Math.max(
+        0,
+        Math.round((new Date(ev.happened_at).getTime() - new Date(openIn.happened_at).getTime()) / 60000),
+      );
+      total += minutes;
+      openIn = null;
+    }
+  }
+  return total;
+}
+
 export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [worker, setWorker] = useState<WorkerDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,6 +103,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       key,
       label: new Date(`${key}T00:00:00`).toLocaleDateString('es-ES'),
       events: dayEvents,
+      totalClosedMinutes: closedMinutesFromEvents(dayEvents),
     }));
   }, [filteredEvents]);
 
@@ -231,7 +261,12 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 ) : (
                   groupedFilteredEvents.map((group) => (
                     <div key={group.key} className="border border-[#e5e5e5] rounded-lg p-3 bg-white">
-                      <div className="text-xs font-semibold text-[#0f766e] mb-2">Jornada {group.label}</div>
+                      <div className="flex items-center justify-between text-xs font-semibold mb-2">
+                        <span className="text-[#0f766e]">Jornada {group.label}</span>
+                        <span className="text-[#475569]">
+                          Total: {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : 'Sin tramos cerrados'}
+                        </span>
+                      </div>
                       <div className="space-y-2">
                         {group.events.map((event) => (
                           <div key={event.id} className="flex justify-between items-start p-3 bg-[#f9f9f9] rounded-lg">
