@@ -42,3 +42,7 @@ VITE_ADMIN_BEARER_TOKEN=<jwt-admin>
 ## Nota
 
 El backend vive en el módulo hermano `sistema-fichaje` con migraciones y funciones Edge.
+
+## Publicacion
+
+Checklist operativo: `GO_LIVE_TODAY.md`.
