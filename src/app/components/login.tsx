@@ -28,7 +28,7 @@ export function Login({ onSuccess }: LoginProps) {
       await signInWithRole(email.trim(), password, "admin");
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error de autenticación");
+      setError(err instanceof Error ? err.message : TEXTS.login.errors.authError);
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export function Login({ onSuccess }: LoginProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
-                placeholder="admin@empresa.com"
+                placeholder={TEXTS.login.placeholders.adminEmail}
                 required
               />
             </div>
@@ -73,14 +73,14 @@ export function Login({ onSuccess }: LoginProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-10 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
-                placeholder="********"
+                placeholder={TEXTS.login.placeholders.passwordMask}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#666666] hover:text-[#000935]"
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-label={showPassword ? TEXTS.login.aria.hidePassword : TEXTS.login.aria.showPassword}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>

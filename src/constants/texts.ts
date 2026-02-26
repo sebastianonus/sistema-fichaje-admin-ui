@@ -23,6 +23,67 @@ export const TEXTS = {
       loggingIn: 'Entrando...',
       logout: 'Cerrar sesion',
     },
+    placeholders: {
+      adminEmail: 'admin@empresa.com',
+      workerEmail: 'trabajador@empresa.com',
+      passwordMask: '********',
+    },
+    aria: {
+      showPassword: 'Mostrar contrasena',
+      hidePassword: 'Ocultar contrasena',
+    },
+    errors: {
+      authError: 'Error de autenticacion',
+      workerLoginError: 'No se pudo iniciar sesion',
+    },
+  },
+
+  workerPortal: {
+    fallbackWorkerName: 'Trabajador',
+    loading: 'Cargando...',
+    title: 'Portal trabajador',
+    loginTitle: 'Acceso mensajero',
+    loginSubtitle: 'Inicia sesion para fichar entrada y salida',
+    sections: {
+      clockStatus: 'Estado de fichaje',
+      latestEvents: 'Ultimos eventos',
+      timelineTitle: 'Linea de fichaje de hoy',
+    },
+    status: {
+      openClock: 'Tienes fichaje abierto (entrada registrada).',
+      noOpenClock: 'No tienes fichaje abierto.',
+      inactiveUser: 'Tu usuario esta inactivo. Contacta con administracion.',
+      workedToday: 'Horas trabajadas hoy (tramos cerrados):',
+      noEvents: 'Sin eventos registrados.',
+      noClosedSegments: 'Sin tramos cerrados',
+      journeyLabel: 'Jornada',
+      totalLabel: 'Total:',
+      segmentTotal: 'Total tramo:',
+    },
+    actions: {
+      clockIn: 'Fichar entrada',
+      clockOut: 'Fichar salida',
+      closeSession: 'Cerrar sesion',
+      updatePassword: 'Actualizar contrasena',
+      updatingPassword: 'Actualizando...',
+    },
+    passwordModal: {
+      title: 'Cambio obligatorio de contrasena',
+      messageNoDeadline: 'Debes actualizar tu contrasena para continuar.',
+      messageWithDeadlinePrefix: 'Debes actualizar tu contrasena antes de',
+      dismissHint: 'Puedes cerrarlo por ahora, pero en el dia limite quedara bloqueado hasta cambiarla.',
+      deadlineExpired: 'Plazo vencido. Debes cambiarla ahora.',
+      currentPassword: 'Contrasena actual',
+      newPassword: 'Nueva contrasena',
+      closeAria: 'Cerrar aviso de cambio obligatorio de contrasena',
+      samePasswordError: 'La nueva contrasena debe ser diferente a la actual',
+      updateError: 'No se pudo actualizar la contrasena',
+    },
+    errors: {
+      generic: 'Error inesperado',
+      invalidSession: 'Sesion no valida para trabajador',
+      clockError: 'No se pudo registrar el evento',
+    },
   },
 
   dashboard: {
