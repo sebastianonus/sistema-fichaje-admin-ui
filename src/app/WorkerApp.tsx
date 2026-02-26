@@ -229,7 +229,7 @@ export default function WorkerApp() {
   if (!authed) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat"
+        className="login-bg-worker min-h-screen flex items-center justify-center p-4 bg-cover bg-no-repeat"
         style={{
           backgroundImage: `linear-gradient(rgba(0, 9, 53, 0.66), rgba(0, 9, 53, 0.5)), url(${workerLoginBg})`,
         }}

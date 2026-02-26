@@ -245,4 +245,21 @@
     outline: 2px solid rgba(0, 201, 206, 0.45);
     outline-offset: 2px;
   }
+
+  .login-bg-admin,
+  .login-bg-worker {
+    background-position: center center;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-bg-admin {
+    /* Keep the worker/driver visible on narrow screens. */
+    background-position: 74% center;
+  }
+
+  .login-bg-worker {
+    /* Keep the foreground subject visible on mobile crop. */
+    background-position: 20% center;
+  }
 }
