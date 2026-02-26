@@ -117,4 +117,7 @@ export async function changeCurrentUserPassword(currentPassword: string, newPass
 
   const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
   if (updateErr) throw updateErr;
+
+  const { error: markErr } = await supabase.rpc("mark_password_changed");
+  if (markErr) throw markErr;
 }

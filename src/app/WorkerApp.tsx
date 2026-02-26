@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User } from "lucide-react";
-import { ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
+import { changeCurrentUserPassword, ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
@@ -12,6 +12,9 @@ interface WorkerProfile {
   role: string;
   is_active: boolean;
   email: string;
+  password_reset_required: boolean;
+  password_reset_deadline?: string | null;
+  password_changed_at?: string | null;
 }
 
 interface WorkerEvent {
@@ -78,8 +81,17 @@ export default function WorkerApp() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
+  const [resetCurrentPassword, setResetCurrentPassword] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetSaving, setResetSaving] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
   const lastEvent = events[0]?.event_type ?? null;
   const isClockedIn = lastEvent === "CLOCK_IN";
+
+  const mustChangePassword = profile?.password_reset_required === true;
+  const resetDeadline = profile?.password_reset_deadline ? new Date(profile.password_reset_deadline) : null;
+  const resetDeadlineExpired = resetDeadline ? Date.now() > resetDeadline.getTime() : false;
 
   const workerName = useMemo(() => profile?.full_name || "Trabajador", [profile]);
   const groupedEvents = useMemo(() => {
@@ -199,6 +211,29 @@ export default function WorkerApp() {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesion");
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  const handleMandatoryPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetCurrentPassword.trim() || !resetNewPassword.trim()) return;
+
+    try {
+      setResetSaving(true);
+      setResetError(null);
+
+      if (resetCurrentPassword.trim() === resetNewPassword.trim()) {
+        throw new Error("La nueva contrasena debe ser diferente a la actual");
+      }
+
+      await changeCurrentUserPassword(resetCurrentPassword.trim(), resetNewPassword.trim());
+      setResetCurrentPassword("");
+      setResetNewPassword("");
+      await load();
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "No se pudo actualizar la contrasena");
+    } finally {
+      setResetSaving(false);
     }
   };
 
@@ -328,14 +363,14 @@ export default function WorkerApp() {
           <div className="flex gap-2">
             <button
               onClick={() => handleClock("CLOCK_IN")}
-              disabled={!profile?.is_active || isClockedIn || actionLoading}
+              disabled={!profile?.is_active || isClockedIn || actionLoading || mustChangePassword}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50"
             >
               <LogIn className="w-4 h-4" /> Fichar entrada
             </button>
             <button
               onClick={() => handleClock("CLOCK_OUT")}
-              disabled={!profile?.is_active || !isClockedIn || actionLoading}
+              disabled={!profile?.is_active || !isClockedIn || actionLoading || mustChangePassword}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] disabled:opacity-50"
             >
               <LogOut className="w-4 h-4" /> Fichar salida
@@ -385,7 +420,54 @@ export default function WorkerApp() {
           )}
         </div>
       </div>
+
+      {mustChangePassword && (
+        <div className="fixed inset-0 z-50 bg-[#000935]/65 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-[#d9e3ee] rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-5 bg-[#00C9CE] text-white">
+              <h2 className="text-xl font-bold text-white">Cambio obligatorio de contrasena</h2>
+              <p className="text-sm text-white/90 mt-1">
+                {resetDeadline
+                  ? `Debes actualizar tu contrasena antes de ${resetDeadline.toLocaleDateString("es-ES")}.`
+                  : "Debes actualizar tu contrasena para continuar."}
+              </p>
+              {resetDeadlineExpired && (
+                <p className="text-sm font-semibold text-white mt-2">Plazo vencido. Debes cambiarla ahora.</p>
+              )}
+            </div>
+            <form onSubmit={handleMandatoryPasswordChange} className="p-6 space-y-4">
+              <div>
+                <label className="block mb-2">Contrasena actual</label>
+                <input
+                  type="password"
+                  value={resetCurrentPassword}
+                  onChange={(e) => setResetCurrentPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-2">Nueva contrasena</label>
+                <input
+                  type="password"
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+                  required
+                />
+              </div>
+              {resetError && <p className="text-sm text-[#dc2626]">{resetError}</p>}
+              <button
+                type="submit"
+                disabled={!resetCurrentPassword.trim() || !resetNewPassword.trim() || resetSaving}
+                className="w-full px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+              >
+                {resetSaving ? "Actualizando..." : "Actualizar contrasena"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

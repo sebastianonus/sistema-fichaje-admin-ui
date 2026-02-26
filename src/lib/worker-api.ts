@@ -25,7 +25,7 @@ export async function getWorkerProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,full_name,role,is_active")
+    .select("id,full_name,role,is_active,password_reset_required,password_reset_deadline,password_changed_at")
     .eq("id", userData.user.id)
     .single();
 
@@ -67,4 +67,3 @@ export async function sendClockEvent(event_type: ClockEventType, note?: string) 
 
   return body.data;
 }
-
