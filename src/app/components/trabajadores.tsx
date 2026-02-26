@@ -1,6 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Filter, X, Search, Calendar, Users } from 'lucide-react';
-import { WorkerDetailModal } from '@/app/components/worker-detail-modal';
 import { CreateWorkerModal } from '@/app/components/create-worker-modal';
 import { TEXTS } from '@/constants/texts';
 import { getWorkers } from '@/lib/api';
@@ -9,10 +8,10 @@ import type { WorkersPreset } from '@/app/App';
 
 interface TrabajadoresProps {
   preset?: WorkersPreset;
+  onOpenWorkerDetail?: (workerId: string) => void;
 }
 
-export function Trabajadores({ preset }: TrabajadoresProps) {
-  const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
+export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -65,6 +64,10 @@ export function Trabajadores({ preset }: TrabajadoresProps) {
     setFilterClockedIn(!!preset.clockedIn);
     setShowFilters(true);
   }, [preset?.token]);
+
+  const openWorker = (workerId: string) => {
+    if (onOpenWorkerDetail) onOpenWorkerDetail(workerId);
+  };
 
   const clearFilters = () => {
     setFilterActive('all');
@@ -260,7 +263,7 @@ export function Trabajadores({ preset }: TrabajadoresProps) {
                   {workers.map((worker) => (
                     <tr
                       key={worker.id}
-                      onClick={() => setSelectedWorker(worker.id)}
+                      onClick={() => openWorker(worker.id)}
                       className="hover:bg-[#f9f9f9] cursor-pointer transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap"><div className="font-medium text-[#000935]">{worker.full_name}</div></td>
@@ -283,7 +286,7 @@ export function Trabajadores({ preset }: TrabajadoresProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedWorker(worker.id);
+                            openWorker(worker.id);
                           }}
                           className="text-[#00C9CE] hover:underline"
                         >
@@ -298,16 +301,6 @@ export function Trabajadores({ preset }: TrabajadoresProps) {
           </div>
         )}
       </div>
-
-      {selectedWorker && (
-        <WorkerDetailModal
-          workerId={selectedWorker}
-          onClose={() => {
-            setSelectedWorker(null);
-            fetchWorkers();
-          }}
-        />
-      )}
       {showCreateModal && (
         <CreateWorkerModal
           onClose={() => setShowCreateModal(false)}
@@ -320,3 +313,4 @@ export function Trabajadores({ preset }: TrabajadoresProps) {
     </>
   );
 }
+

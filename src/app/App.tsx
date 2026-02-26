@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Sidebar } from '@/app/components/sidebar';
 import { Dashboard } from '@/app/components/dashboard';
 import { Trabajadores } from '@/app/components/trabajadores';
+import { WorkerDetailPage } from '@/app/components/worker-detail-page';
 import { Exports } from '@/app/components/exports';
 import { Ajustes } from '@/app/components/ajustes';
 import { Login } from '@/app/components/login';
 import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
 
-export type Page = 'dashboard' | 'trabajadores' | 'exports' | 'ajustes';
+export type Page = 'dashboard' | 'trabajadores' | 'workerDetail' | 'exports' | 'ajustes';
 export type WorkersPreset = {
   isActive?: 'active' | 'inactive';
   clockedIn?: boolean;
@@ -17,6 +18,7 @@ export type WorkersPreset = {
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [workersPreset, setWorkersPreset] = useState<WorkersPreset>(null);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -67,6 +69,11 @@ export default function App() {
     setCurrentPage('trabajadores');
   };
 
+  const handleOpenWorkerDetail = (workerId: string) => {
+    setSelectedWorkerId(workerId);
+    setCurrentPage('workerDetail');
+  };
+
   if (!authReady) {
     return <div className="min-h-screen flex items-center justify-center text-[#666666]">Cargando...</div>;
   }
@@ -90,7 +97,18 @@ export default function App() {
             onOpenWorkersFiltered={handleOpenWorkersFiltered}
           />
         )}
-        {currentPage === 'trabajadores' && <Trabajadores preset={workersPreset} />}
+        {currentPage === 'trabajadores' && (
+          <Trabajadores
+            preset={workersPreset}
+            onOpenWorkerDetail={handleOpenWorkerDetail}
+          />
+        )}
+        {currentPage === 'workerDetail' && selectedWorkerId && (
+          <WorkerDetailPage
+            workerId={selectedWorkerId}
+            onBack={() => setCurrentPage('trabajadores')}
+          />
+        )}
         {currentPage === 'exports' && <Exports />}
         {currentPage === 'ajustes' && <Ajustes />}
       </main>
