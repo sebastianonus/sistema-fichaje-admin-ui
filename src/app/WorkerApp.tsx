@@ -19,6 +19,22 @@ interface WorkerEvent {
   note?: string | null;
 }
 
+function isTodayLocal(value: string) {
+  const d = new Date(value);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+function formatMinutes(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h ${m.toString().padStart(2, "0")}m`;
+}
+
 export default function WorkerApp() {
   const [ready, setReady] = useState(false);
   const [authed, setAuthed] = useState(false);
@@ -36,6 +52,41 @@ export default function WorkerApp() {
   const isClockedIn = lastEvent === "CLOCK_IN";
 
   const workerName = useMemo(() => profile?.full_name || "Trabajador", [profile]);
+  const workedStats = useMemo(() => {
+    const asc = [...events].sort(
+      (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
+    );
+
+    let openClockIn: WorkerEvent | null = null;
+    const durationByClockOutId = new Map<string, number>();
+    let totalClosedMinutesToday = 0;
+
+    for (const ev of asc) {
+      if (ev.event_type === "CLOCK_IN") {
+        openClockIn = ev;
+        continue;
+      }
+
+      if (ev.event_type === "CLOCK_OUT" && openClockIn) {
+        const inTime = new Date(openClockIn.happened_at).getTime();
+        const outTime = new Date(ev.happened_at).getTime();
+        const minutes = Math.max(0, Math.round((outTime - inTime) / 60000));
+        durationByClockOutId.set(ev.id, minutes);
+
+        if (isTodayLocal(openClockIn.happened_at) && isTodayLocal(ev.happened_at)) {
+          totalClosedMinutesToday += minutes;
+        }
+
+        openClockIn = null;
+      }
+    }
+
+    return {
+      durationByClockOutId,
+      totalClosedMinutesToday,
+      hasClosedToday: totalClosedMinutesToday > 0,
+    };
+  }, [events]);
 
   const load = async () => {
     try {
@@ -188,6 +239,11 @@ export default function WorkerApp() {
               ? (isClockedIn ? "Tienes fichaje abierto (entrada registrada)." : "No tienes fichaje abierto.")
               : "Tu usuario esta inactivo. Contacta con administracion."}
           </p>
+          {workedStats.hasClosedToday && (
+            <p className="text-sm text-[#0f766e] mb-4">
+              Horas trabajadas hoy (tramos cerrados): {formatMinutes(workedStats.totalClosedMinutesToday)}
+            </p>
+          )}
 
           <div className="flex gap-2">
             <button
@@ -220,7 +276,14 @@ export default function WorkerApp() {
             <div className="space-y-2">
               {events.map((ev) => (
                 <div key={ev.id} className="p-3 rounded-lg bg-[#f9f9f9] flex items-center justify-between">
-                  <span className="text-sm font-medium text-[#000935]">{ev.event_type}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-[#000935]">{ev.event_type}</span>
+                    {ev.event_type === "CLOCK_OUT" && workedStats.durationByClockOutId.has(ev.id) && (
+                      <span className="text-xs text-[#0f766e]">
+                        Total tramo: {formatMinutes(workedStats.durationByClockOutId.get(ev.id) ?? 0)}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-sm text-[#666666]">{new Date(ev.happened_at).toLocaleString("es-ES")}</span>
                 </div>
               ))}
