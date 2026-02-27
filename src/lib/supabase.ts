@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { TEXTS } from "@/constants/texts";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -58,7 +59,7 @@ export async function signInAdmin(email: string, password: string) {
 }
 
 export async function signInWithEmailPassword(email: string, password: string) {
-  if (!supabase) throw new Error("Cliente Supabase no configurado");
+  if (!supabase) throw new Error(TEXTS.api.missingSupabaseClient);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data.session;
@@ -70,10 +71,10 @@ export async function signOutAdmin() {
 }
 
 export async function getCurrentProfile() {
-  if (!supabase) throw new Error("Cliente Supabase no configurado");
+  if (!supabase) throw new Error(TEXTS.api.missingSupabaseClient);
 
   const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !userData.user?.id) throw new Error("Usuario no autenticado");
+  if (userErr || !userData.user?.id) throw new Error(TEXTS.api.unauthenticatedUser);
 
   const { data: profile, error: profErr } = await supabase
     .from("profiles")
@@ -92,7 +93,7 @@ export async function ensureRole(role: UserRole) {
   const profile = await getCurrentProfile();
   if (profile.role !== role) {
     await signOutAdmin();
-    throw new Error(`Rol no permitido para este portal (${role})`);
+    throw new Error(`${TEXTS.api.roleNotAllowedPrefix} (${role})`);
   }
   return profile;
 }
@@ -104,16 +105,16 @@ export async function signInWithRole(email: string, password: string, role: User
 }
 
 export async function changeCurrentUserPassword(currentPassword: string, newPassword: string) {
-  if (!supabase) throw new Error("Cliente Supabase no configurado");
+  if (!supabase) throw new Error(TEXTS.api.missingSupabaseClient);
   const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !userData.user) throw new Error("Usuario no autenticado");
-  if (!userData.user.email) throw new Error("Usuario sin email");
+  if (userErr || !userData.user) throw new Error(TEXTS.api.unauthenticatedUser);
+  if (!userData.user.email) throw new Error(TEXTS.api.missingUserEmail);
 
   const { error: verifyErr } = await supabase.auth.signInWithPassword({
     email: userData.user.email,
     password: currentPassword,
   });
-  if (verifyErr) throw new Error("La contrasena actual no es valida");
+  if (verifyErr) throw new Error(TEXTS.api.invalidCurrentPassword);
 
   const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
   if (updateErr) throw updateErr;

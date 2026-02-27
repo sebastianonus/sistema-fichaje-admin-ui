@@ -69,7 +69,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setWorker(data);
       setPhoneDraft(data.phone_number ?? '');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setShowDeactivateModal(false);
       await fetchWorker();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -134,7 +134,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setShowActivateModal(false);
       await fetchWorker();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -149,7 +149,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setShowPasswordModal(false);
       setNewPassword('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -164,7 +164,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setEditingPhone(false);
       await fetchWorker();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -179,7 +179,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
             className="inline-flex items-center gap-2 px-3 py-2 border border-[#e5e5e5] rounded-lg hover:bg-[#f9f9f9]"
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver a trabajadores
+            {TEXTS.workerDetail.backToWorkers}
           </button>
           <h1>{TEXTS.workerDetail.title}</h1>
         </div>
@@ -208,7 +208,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                         type="text"
                         value={phoneDraft}
                         onChange={(e) => setPhoneDraft(e.target.value)}
-                        placeholder="+34 600000000"
+                        placeholder={TEXTS.workerDetail.phone.placeholder}
                         className="px-3 py-2 border border-[#e5e5e5] rounded-lg"
                       />
                       <button
@@ -216,7 +216,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                         disabled={saving}
                         className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
                       >
-                        Guardar
+                        {TEXTS.workerDetail.phone.save}
                       </button>
                       <button
                         onClick={() => {
@@ -225,7 +225,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                         }}
                         className="px-3 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5]"
                       >
-                        Cancelar
+                        {TEXTS.workerDetail.phone.cancel}
                       </button>
                     </div>
                   ) : (
@@ -235,7 +235,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                         onClick={() => setEditingPhone(true)}
                         className="text-[#00C9CE] hover:underline"
                       >
-                        Editar
+                        {TEXTS.workerDetail.phone.edit}
                       </button>
                     </div>
                   )}
@@ -274,13 +274,13 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
             </div>
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
-              <WorkdayTimeline events={worker.time_events} title="Linea de fichaje de hoy" />
+              <WorkdayTimeline events={worker.time_events} title={TEXTS.workerPortal.sections.timelineTitle} />
             </div>
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
               <div className="flex flex-wrap items-end gap-3 mb-4">
                 <div>
-                  <label className="block text-sm mb-1">Fecha desde</label>
+                  <label className="block text-sm mb-1">{TEXTS.workerDetail.filters.fromDate}</label>
                   <input
                     type="date"
                     value={dateFrom}
@@ -289,7 +289,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1">Fecha hasta</label>
+                  <label className="block text-sm mb-1">{TEXTS.workerDetail.filters.toDate}</label>
                   <input
                     type="date"
                     value={dateTo}
@@ -298,17 +298,17 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1">Cantidad de eventos</label>
+                  <label className="block text-sm mb-1">{TEXTS.workerDetail.filters.maxEvents}</label>
                   <select
                     value={maxEvents}
                     onChange={(e) => setMaxEvents(Number(e.target.value))}
                     className="px-3 py-2 border border-[#e5e5e5] rounded-lg"
                   >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                    <option value={200}>200</option>
+                    {TEXTS.workerDetail.filters.eventsOptions.map((count) => (
+                      <option key={count} value={count}>
+                        {count}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -320,9 +320,9 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                   groupedFilteredEvents.map((group, idx) => (
                     <details key={group.key} className="border border-[#e5e5e5] rounded-lg bg-white" open={idx === 0}>
                       <summary className="list-none cursor-pointer p-3 flex items-center justify-between text-xs font-semibold">
-                        <span className="text-[#0f766e]">Jornada {group.label}</span>
+                        <span className="text-[#0f766e]">{TEXTS.workerPortal.status.journeyLabel} {group.label}</span>
                         <span className="text-[#475569]">
-                          Total: {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : 'Sin tramos cerrados'}
+                          {TEXTS.workerPortal.status.totalLabel} {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : TEXTS.workerPortal.status.noClosedSegments}
                         </span>
                       </summary>
                       <div className="px-3 pb-3 space-y-2">

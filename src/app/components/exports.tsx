@@ -8,17 +8,23 @@ import type { ExportRecord, WorkerSummary } from '@/lib/types';
 function getReadableCreatorName(exp: ExportRecord) {
   const name = exp.created_by_name?.trim();
   if (name) return name;
-  return 'Usuario del sistema';
+  return TEXTS.exports.creatorFallback;
 }
 
 function formatFriendlyExportName(exp: ExportRecord) {
   const from = exp.filters.from ? new Date(exp.filters.from).toISOString().slice(0, 10) : null;
   const to = exp.filters.to ? new Date(exp.filters.to).toISOString().slice(0, 10) : null;
   const stamp = new Date(exp.created_at).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
-  if (from && to) return `fichajes_${from}_a_${to}_${stamp}.csv`;
-  if (from) return `fichajes_desde_${from}_${stamp}.csv`;
-  if (to) return `fichajes_hasta_${to}_${stamp}.csv`;
-  return `fichajes_${stamp}.csv`;
+  if (from && to) {
+    return `${TEXTS.exports.fileNames.base}${TEXTS.exports.fileNames.separator}${from}${TEXTS.exports.fileNames.rangeJoin}${to}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
+  }
+  if (from) {
+    return `${TEXTS.exports.fileNames.fromPrefix}${TEXTS.exports.fileNames.separator}${from}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
+  }
+  if (to) {
+    return `${TEXTS.exports.fileNames.toPrefix}${TEXTS.exports.fileNames.separator}${to}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
+  }
+  return `${TEXTS.exports.fileNames.base}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
 }
 
 function displayExportFileName(exp: ExportRecord) {
@@ -44,7 +50,7 @@ export function Exports() {
       const data = await getExports();
       setExportsData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.exports.errors.generic);
     } finally {
       setLoading(false);
     }
@@ -59,7 +65,7 @@ export function Exports() {
       const data = await getExportSignedUrl(exp.id);
       const filename = displayExportFileName(exp);
       const res = await fetch(data.signed_url);
-      if (!res.ok) throw new Error('DOWNLOAD_FAILED');
+      if (!res.ok) throw new Error(TEXTS.exports.errors.downloadFailed);
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -70,7 +76,7 @@ export function Exports() {
       a.remove();
       URL.revokeObjectURL(objectUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.exports.errors.generic);
     }
   };
 
@@ -82,7 +88,7 @@ export function Exports() {
       setRevokeExportId(null);
       await fetchExports();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.exports.errors.generic);
     }
   };
 
@@ -268,7 +274,7 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
       window.open(created.signed_url, '_blank', 'noopener,noreferrer');
       onCreated?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.exports.errors.generic);
     } finally {
       setIsSubmitting(false);
     }
@@ -328,14 +334,14 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
           </div>
 
           <div>
-            <label className="block mb-2">Trabajador (opcional)</label>
+            <label className="block mb-2">{TEXTS.exports.workerFilter.label}</label>
             <select
               value={workerId}
               onChange={(e) => setWorkerId(e.target.value)}
               disabled={workersLoading}
               className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE] disabled:opacity-60"
             >
-              <option value="">Todos los trabajadores</option>
+              <option value="">{TEXTS.exports.workerFilter.all}</option>
               {workers.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.full_name}
@@ -345,14 +351,14 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
           </div>
 
           <div>
-            <label className="block mb-2">Zona horaria</label>
+            <label className="block mb-2">{TEXTS.exports.timezone.label}</label>
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value as 'peninsula' | 'canarias')}
               className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
             >
-              <option value="peninsula">Península (Madrid)</option>
-              <option value="canarias">Islas Canarias</option>
+              <option value="peninsula">{TEXTS.exports.timezone.peninsula}</option>
+              <option value="canarias">{TEXTS.exports.timezone.canarias}</option>
             </select>
           </div>
 

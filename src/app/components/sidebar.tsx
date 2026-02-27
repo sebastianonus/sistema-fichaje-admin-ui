@@ -35,7 +35,7 @@ export function Sidebar({ currentPage, onNavigate, showLogout, onLogout }: Sideb
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 text-white rounded-lg hover:bg-[#0a1850] transition-colors"
-          aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-label={isOpen ? TEXTS.sidebar.aria.closeMenu : TEXTS.sidebar.aria.openMenu}
         >
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -154,3 +154,4 @@ export function Sidebar({ currentPage, onNavigate, showLogout, onLogout }: Sideb
     </>
   );
 }
+

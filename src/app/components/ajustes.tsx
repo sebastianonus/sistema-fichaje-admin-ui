@@ -14,9 +14,9 @@ export function Ajustes() {
 
   const [checking, setChecking] = useState(false);
   const [health, setHealth] = useState<{ dashboard: string; workers: string; exports: string }>({
-    dashboard: 'pendiente',
-    workers: 'pendiente',
-    exports: 'pendiente',
+    dashboard: TEXTS.ajustes.health.pending,
+    workers: TEXTS.ajustes.health.pending,
+    exports: TEXTS.ajustes.health.pending,
   });
 
   const authMode = hasStaticAdminToken() ? 'token-env' : 'session';
@@ -33,27 +33,31 @@ export function Ajustes() {
 
   const runHealthCheck = async () => {
     setChecking(true);
-    setHealth({ dashboard: 'comprobando...', workers: 'comprobando...', exports: 'comprobando...' });
+    setHealth({
+      dashboard: TEXTS.ajustes.health.checking,
+      workers: TEXTS.ajustes.health.checking,
+      exports: TEXTS.ajustes.health.checking,
+    });
 
     try {
       await getDashboardMetrics();
-      setHealth((h) => ({ ...h, dashboard: 'ok' }));
+      setHealth((h) => ({ ...h, dashboard: TEXTS.ajustes.health.ok }));
     } catch {
-      setHealth((h) => ({ ...h, dashboard: 'error' }));
+      setHealth((h) => ({ ...h, dashboard: TEXTS.ajustes.health.error }));
     }
 
     try {
       await getWorkers({});
-      setHealth((h) => ({ ...h, workers: 'ok' }));
+      setHealth((h) => ({ ...h, workers: TEXTS.ajustes.health.ok }));
     } catch {
-      setHealth((h) => ({ ...h, workers: 'error' }));
+      setHealth((h) => ({ ...h, workers: TEXTS.ajustes.health.error }));
     }
 
     try {
       await getExports();
-      setHealth((h) => ({ ...h, exports: 'ok' }));
+      setHealth((h) => ({ ...h, exports: TEXTS.ajustes.health.ok }));
     } catch {
-      setHealth((h) => ({ ...h, exports: 'error' }));
+      setHealth((h) => ({ ...h, exports: TEXTS.ajustes.health.error }));
     }
 
     setChecking(false);
@@ -72,7 +76,7 @@ export function Ajustes() {
       setNewPassword('');
       setPasswordMsg(TEXTS.ajustes.password.success);
     } catch (err) {
-      setPasswordErr(err instanceof Error ? err.message : 'Error inesperado');
+      setPasswordErr(err instanceof Error ? err.message : TEXTS.ajustes.errors.generic);
     } finally {
       setSavingPassword(false);
     }
@@ -113,9 +117,9 @@ export function Ajustes() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-          <StatusCard title="Dashboard" value={health.dashboard} />
-          <StatusCard title="Trabajadores" value={health.workers} />
-          <StatusCard title="Exports" value={health.exports} />
+          <StatusCard title={TEXTS.ajustes.health.cards.dashboard} value={health.dashboard} />
+          <StatusCard title={TEXTS.ajustes.health.cards.workers} value={health.workers} />
+          <StatusCard title={TEXTS.ajustes.health.cards.exports} value={health.exports} />
         </div>
       </section>
 
@@ -149,7 +153,7 @@ export function Ajustes() {
               disabled={!currentPassword.trim() || !newPassword.trim() || savingPassword}
               className="px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] transition-colors disabled:opacity-50"
             >
-              {savingPassword ? TEXTS.createWorker.actions.creating : TEXTS.ajustes.password.action}
+              {savingPassword ? TEXTS.ajustes.password.saving : TEXTS.ajustes.password.action}
             </button>
           </form>
 

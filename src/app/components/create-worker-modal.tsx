@@ -30,7 +30,7 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
       });
       onCreated?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.trabajadores.errors.generic);
     } finally {
       setIsSubmitting(false);
     }

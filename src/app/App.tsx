@@ -6,6 +6,7 @@ import { WorkerDetailPage } from '@/app/components/worker-detail-page';
 import { Exports } from '@/app/components/exports';
 import { Ajustes } from '@/app/components/ajustes';
 import { Login } from '@/app/components/login';
+import { TEXTS } from '@/constants/texts';
 import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
 
 export type Page = 'dashboard' | 'trabajadores' | 'workerDetail' | 'exports' | 'ajustes';
@@ -75,7 +76,7 @@ export default function App() {
   };
 
   if (!authReady) {
-    return <div className="min-h-screen flex items-center justify-center text-[#666666]">Cargando...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-[#666666]">{TEXTS.common.loading}</div>;
   }
 
   if (!isAuthenticated) {

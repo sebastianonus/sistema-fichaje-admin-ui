@@ -98,10 +98,14 @@ export const TEXTS = {
     actions: {
       createWorker: 'Crear trabajador',
       generateExport: 'Generar export',
+      viewActive: 'Ver activos',
+      viewClockedIn: 'Ver fichados ahora',
+      goToExports: 'Ir a exports',
     },
     errors: {
       loadError: 'Error al cargar',
       retry: 'Reintentar',
+      generic: 'Error inesperado',
     },
   },
 
@@ -163,6 +167,13 @@ export const TEXTS = {
       sendCredentials: 'Enviar credenciales',
       clearFilters: 'Limpiar filtros',
     },
+    info: {
+      onboardingSummary: 'Mensajes preparados: {ready}. Sin telefono: {noPhone}. Fallidos: {failed}.',
+    },
+    errors: {
+      selectAtLeastOne: 'Selecciona al menos un trabajador para enviar credenciales.',
+      generic: 'Error inesperado',
+    },
   },
 
   workerDetail: {
@@ -194,9 +205,36 @@ export const TEXTS = {
     },
     timeEvents: {
       noEvents: 'No hay eventos registrados',
+      todayRealtime: 'Fichaje de hoy (tiempo real)',
+      latestJourneyTitle: 'Ultima jornada registrada',
+      dateLabel: 'Fecha:',
+      inLabel: 'Entrada:',
+      outLabel: 'Salida:',
+      totalLabel: 'Total:',
+      pending: 'Pendiente',
+      latestJourneyOnly: 'Eventos de la ultima jornada',
+      fullHistory: 'Historial completo',
+      showFullHistory: 'Ver historial completo',
+      showLatestOnly: 'Ver solo ultima jornada',
     },
     dangerZone: {
       warning: 'Estas acciones son irreversibles y quedan registradas en el sistema.',
+    },
+    backToWorkers: 'Volver a trabajadores',
+    phone: {
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      edit: 'Editar',
+      placeholder: '+34 600000000',
+    },
+    filters: {
+      fromDate: 'Fecha desde',
+      toDate: 'Fecha hasta',
+      maxEvents: 'Cantidad de eventos',
+      eventsOptions: [10, 20, 50, 100, 200],
+    },
+    errors: {
+      generic: 'Error inesperado',
     },
   },
 
@@ -298,6 +336,28 @@ export const TEXTS = {
     actions: {
       generate: 'Generar export',
     },
+    creatorFallback: 'Usuario del sistema',
+    timezone: {
+      label: 'Zona horaria',
+      peninsula: 'Peninsula (Madrid)',
+      canarias: 'Islas Canarias',
+    },
+    workerFilter: {
+      label: 'Trabajador (opcional)',
+      all: 'Todos los trabajadores',
+    },
+    errors: {
+      downloadFailed: 'DOWNLOAD_FAILED',
+      generic: 'Error inesperado',
+    },
+    fileNames: {
+      base: 'fichajes',
+      fromPrefix: 'fichajes_desde',
+      toPrefix: 'fichajes_hasta',
+      rangeJoin: '_a_',
+      separator: '_',
+      extension: '.csv',
+    },
   },
 
   createExport: {
@@ -340,6 +400,15 @@ export const TEXTS = {
     health: {
       title: 'Estado de endpoints',
       checkAction: 'Comprobar ahora',
+      pending: 'pendiente',
+      checking: 'comprobando...',
+      ok: 'ok',
+      error: 'error',
+      cards: {
+        dashboard: 'Dashboard',
+        workers: 'Trabajadores',
+        exports: 'Exports',
+      },
     },
     password: {
       title: 'Seguridad de sesion',
@@ -348,7 +417,42 @@ export const TEXTS = {
       newPlaceholder: 'Nueva contrasena',
       action: 'Actualizar contrasena',
       success: 'Contrasena actualizada correctamente',
+      saving: 'Actualizando...',
     },
+    errors: {
+      generic: 'Error inesperado',
+    },
+  },
+
+  sidebar: {
+    aria: {
+      openMenu: 'Abrir menu',
+      closeMenu: 'Cerrar menu',
+    },
+  },
+
+  timeline: {
+    defaultTitle: 'Jornada en tiempo real',
+    hours: {
+      start: '00:00',
+      six: '06:00',
+      twelve: '12:00',
+      eighteen: '18:00',
+      end: '23:59',
+    },
+    currentPointAria: 'Punto actual de jornada',
+    activeTitlePrefix: 'Jornada activa',
+  },
+
+  api: {
+    missingSupabaseUrl: 'Falta VITE_SUPABASE_URL o VITE_SUPABASE_FUNCTIONS_URL',
+    missingAdminToken: 'No hay token de admin. Define VITE_ADMIN_BEARER_TOKEN o inicia sesion en Supabase.',
+    missingSupabaseClient: 'Cliente Supabase no configurado',
+    missingSession: 'Sesion no disponible',
+    unauthenticatedUser: 'Usuario no autenticado',
+    missingUserEmail: 'Usuario sin email',
+    invalidCurrentPassword: 'La contrasena actual no es valida',
+    roleNotAllowedPrefix: 'Rol no permitido para este portal',
   },
 
   common: {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { TEXTS } from "@/constants/texts";
 
 type TimelineEvent = {
   id: string;
@@ -35,7 +36,7 @@ function isToday(d: Date) {
   );
 }
 
-export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: WorkdayTimelineProps) {
+export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }: WorkdayTimelineProps) {
   const [nowTick, setNowTick] = useState(Date.now());
 
   useEffect(() => {
@@ -80,11 +81,11 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
       <div className="rounded-3xl border-4 border-[#00C9CE] bg-[#f7fbfd] p-5">
         <div className="relative h-24">
           <div className="absolute top-0 left-0 right-0 flex justify-between px-1 text-[12px] md:text-[16px] leading-none font-semibold text-[#2dc3d5]">
-            <span>00:00</span>
-            <span>06:00</span>
-            <span>12:00</span>
-            <span>18:00</span>
-            <span>23:59</span>
+            <span>{TEXTS.timeline.hours.start}</span>
+            <span>{TEXTS.timeline.hours.six}</span>
+            <span>{TEXTS.timeline.hours.twelve}</span>
+            <span>{TEXTS.timeline.hours.eighteen}</span>
+            <span>{TEXTS.timeline.hours.end}</span>
           </div>
 
           <div className="absolute top-[48px] left-0 right-0 h-8 rounded-full border-[5px] border-[#9b9b9b] bg-[#f8f8f8]">
@@ -112,8 +113,8 @@ export function WorkdayTimeline({ events, title = "Jornada en tiempo real" }: Wo
                   style={{
                     left: `${(clampMinute(processed.openHandleMinute) / DAY_MINUTES) * 100}%`,
                   }}
-                  aria-label="Punto actual de jornada"
-                  title={`Jornada activa - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
+                  aria-label={TEXTS.timeline.currentPointAria}
+                  title={`${TEXTS.timeline.activeTitlePrefix} - ${new Date(nowTick).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`}
                 />
               )}
             </div>

@@ -22,7 +22,7 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
       const metrics = await getDashboardMetrics();
       setData(metrics);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.dashboard.errors.generic);
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
           error={error}
           onRetry={fetchMetrics}
           onClick={() => onOpenWorkersFiltered({ isActive: 'active' })}
-          actionLabel="Ver activos"
+          actionLabel={TEXTS.dashboard.actions.viewActive}
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.active_workers ?? TEXTS.common.noData}</div>
         </MetricCard>
@@ -77,7 +77,7 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
           onRetry={fetchMetrics}
           expandable
           onClick={() => onOpenWorkersFiltered({ isActive: 'active', clockedIn: true })}
-          actionLabel="Ver fichados ahora"
+          actionLabel={TEXTS.dashboard.actions.viewClockedIn}
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.clocked_in_workers_count ?? TEXTS.common.noData}</div>
           {!!data?.clocked_in_workers?.length && (
@@ -99,7 +99,7 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
           error={error}
           onRetry={fetchMetrics}
           onClick={() => onNavigate('exports')}
-          actionLabel="Ir a exports"
+          actionLabel={TEXTS.dashboard.actions.goToExports}
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.events_today ?? TEXTS.common.noData}</div>
         </MetricCard>

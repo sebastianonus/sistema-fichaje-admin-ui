@@ -1,5 +1,6 @@
 import { getSessionAccessToken, getStaticAdminToken } from "@/lib/supabase";
 import type { DashboardMetrics, ExportRecord, WorkerDetail, WorkerSummary } from "@/lib/types";
+import { TEXTS } from "@/constants/texts";
 
 type ApiEnvelope<T> = { ok: boolean; data: T; error?: string; details?: string };
 
@@ -16,7 +17,7 @@ function getFunctionsBaseUrl() {
   if (custom) return custom.replace(/\/$/, "");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  if (!supabaseUrl) throw new Error("Falta VITE_SUPABASE_URL o VITE_SUPABASE_FUNCTIONS_URL");
+  if (!supabaseUrl) throw new Error(TEXTS.api.missingSupabaseUrl);
   return `${supabaseUrl.replace(/\/$/, "")}/functions/v1`;
 }
 
@@ -30,7 +31,7 @@ async function getBearerToken() {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getBearerToken();
   if (!token) {
-    throw new Error("No hay token de admin. Define VITE_ADMIN_BEARER_TOKEN o inicia sesión en Supabase.");
+    throw new Error(TEXTS.api.missingAdminToken);
   }
 
   const res = await fetch(`${getFunctionsBaseUrl()}${path}`, {
@@ -196,3 +197,4 @@ export async function revokeExport(exportId: string) {
   });
   return res.data;
 }
+

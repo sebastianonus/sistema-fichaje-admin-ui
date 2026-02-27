@@ -48,7 +48,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       });
       setWorkers(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.trabajadores.errors.generic);
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
   const handleSendCredentials = async (workerIds?: string[]) => {
     const ids = workerIds && workerIds.length ? workerIds : selectedIds;
     if (!ids.length) {
-      setError('Selecciona al menos un trabajador para enviar credenciales.');
+      setError(TEXTS.trabajadores.errors.selectAtLeastOne);
       return;
     }
 
@@ -124,11 +124,14 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         window.open(item.whatsapp_url!, '_blank', 'noopener,noreferrer');
       }
 
-      const summary = `Mensajes preparados: ${ready.length}. Sin telefono: ${noPhone}. Fallidos: ${failed}.`;
+      const summary = TEXTS.trabajadores.info.onboardingSummary
+        .replace('{ready}', String(ready.length))
+        .replace('{noPhone}', String(noPhone))
+        .replace('{failed}', String(failed));
       setInfo(summary);
       await fetchWorkers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.trabajadores.errors.generic);
     } finally {
       setSendingCredentials(false);
     }

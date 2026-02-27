@@ -35,7 +35,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
       const data = await getWorker(workerId);
       setWorker(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
   }, [worker?.time_events]);
 
   const formatMinutes = (minutes: number | null) => {
-    if (minutes === null) return 'N/A';
+    if (minutes === null) return TEXTS.common.noData;
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
     return `${h}h ${m.toString().padStart(2, '0')}m`;
@@ -142,7 +142,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
       setShowSaveConfirm(false);
       setIsEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -158,7 +158,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
       setShowPasswordModal(false);
       setNewPassword('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -174,7 +174,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
       setShowDeactivateModal(false);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -190,7 +190,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
       setShowActivateModal(false);
       await fetchWorker();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
     } finally {
       setSaving(false);
     }
@@ -309,18 +309,18 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
                 <div className="border-t border-[#e5e5e5] pt-6">
                   <h3 className="mb-4">{TEXTS.workerDetail.sections.timeEvents}</h3>
                   <div className="mb-4">
-                    <WorkdayTimeline events={worker.time_events} title="Fichaje de hoy (tiempo real)" />
+                    <WorkdayTimeline events={worker.time_events} title={TEXTS.workerDetail.timeEvents.todayRealtime} />
                   </div>
 
                   <div className="mb-4 p-3 bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg">
-                    <div className="font-medium text-[#000935] mb-1">Ultima jornada registrada</div>
+                    <div className="font-medium text-[#000935] mb-1">{TEXTS.workerDetail.timeEvents.latestJourneyTitle}</div>
                     {historyState.latestJourneyDate ? (
                       <>
                         <div className="text-sm text-[#666666] mb-1">
-                          Fecha: {new Date(`${historyState.latestJourneyDate}T00:00:00`).toLocaleDateString('es-ES')}
+                          {TEXTS.workerDetail.timeEvents.dateLabel} {new Date(`${historyState.latestJourneyDate}T00:00:00`).toLocaleDateString('es-ES')}
                         </div>
                         <div className="text-sm text-[#666666]">
-                          Entrada: {historyState.latestClockIn ? new Date(historyState.latestClockIn.happened_at).toLocaleTimeString('es-ES') : 'N/A'} | Salida: {historyState.latestClockOut ? new Date(historyState.latestClockOut.happened_at).toLocaleTimeString('es-ES') : 'Pendiente'} | Total: {formatMinutes(historyState.totalMinutes)}
+                          {TEXTS.workerDetail.timeEvents.inLabel} {historyState.latestClockIn ? new Date(historyState.latestClockIn.happened_at).toLocaleTimeString('es-ES') : TEXTS.common.noData} | {TEXTS.workerDetail.timeEvents.outLabel} {historyState.latestClockOut ? new Date(historyState.latestClockOut.happened_at).toLocaleTimeString('es-ES') : TEXTS.workerDetail.timeEvents.pending} | {TEXTS.workerDetail.timeEvents.totalLabel} {formatMinutes(historyState.totalMinutes)}
                         </div>
                       </>
                     ) : (
@@ -331,14 +331,14 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
                   {!!worker.time_events.length && (
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm text-[#666666]">
-                        {showFullHistory ? 'Historial completo' : 'Eventos de la ultima jornada'}
+                        {showFullHistory ? TEXTS.workerDetail.timeEvents.fullHistory : TEXTS.workerDetail.timeEvents.latestJourneyOnly}
                       </h4>
                       <button
                         type="button"
                         onClick={() => setShowFullHistory((v) => !v)}
                         className="text-sm text-[#00C9CE] hover:underline"
                       >
-                        {showFullHistory ? 'Ver solo ultima jornada' : 'Ver historial completo'}
+                        {showFullHistory ? TEXTS.workerDetail.timeEvents.showLatestOnly : TEXTS.workerDetail.timeEvents.showFullHistory}
                       </button>
                     </div>
                   )}
