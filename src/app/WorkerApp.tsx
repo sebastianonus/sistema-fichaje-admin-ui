@@ -101,7 +101,7 @@ export default function WorkerApp() {
   const resetDeadlineExpired = resetDeadline ? Date.now() > resetDeadline.getTime() : false;
   const showPasswordResetModal = mustChangePassword && (!dismissedResetModal || isDeadlineDayOrLater);
   const canClosePasswordResetModal = mustChangePassword && !isDeadlineDayOrLater;
-  const passwordChangeBlocksClock = mustChangePassword && isDeadlineDayOrLater;
+  const passwordChangeBlocksClock = mustChangePassword && resetDeadlineExpired;
 
   const workerName = useMemo(() => profile?.full_name || t.fallbackWorkerName, [profile]);
   const groupedEvents = useMemo(() => {
