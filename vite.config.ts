@@ -12,7 +12,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'apple-touch-icon.png'],
+      includeAssets: ['onus-192x192.png', 'onus-512x512.png', 'apple-touch-icon-onus.png', 'favicon-onus.ico', 'favicon-onus.png'],
       manifest: {
         name: 'ONUS Worker',
         short_name: 'ONUS Worker',
@@ -24,23 +24,23 @@ export default defineConfig({
         scope: '/',
         icons: [
           {
-            src: '/pwa-192x192.png',
+            src: '/onus-192x192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/pwa-512x512.png',
+            src: '/onus-512x512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: '/pwa-512x512.png',
+            src: '/onus-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
           {
-            src: '/apple-touch-icon.png',
+            src: '/apple-touch-icon-onus.png',
             sizes: '180x180',
             type: 'image/png',
           },
