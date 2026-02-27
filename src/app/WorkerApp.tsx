@@ -8,6 +8,11 @@ import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
 import headerLogo from "@/assets/logo-onus-express-color-2.png";
 import workerLoginBg from "@/assets/login/worker-login-bg.jpg";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
 interface WorkerProfile {
   id: string;
   full_name: string;
@@ -89,6 +94,9 @@ export default function WorkerApp() {
   const [resetSaving, setResetSaving] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [dismissedResetModal, setDismissedResetModal] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showIosInstallHint, setShowIosInstallHint] = useState(false);
 
   const lastEvent = events[0]?.event_type ?? null;
   const isClockedIn = lastEvent === "CLOCK_IN";
@@ -216,6 +224,48 @@ export default function WorkerApp() {
     }
   }, [mustChangePassword]);
 
+  useEffect(() => {
+    const isStandaloneMode = () =>
+      window.matchMedia("(display-mode: standalone)").matches ||
+      ((window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+
+    const isIosSafari = () => {
+      const ua = window.navigator.userAgent;
+      const isIos = /iphone|ipad|ipod/i.test(ua);
+      const isSafari = /safari/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
+      return isIos && isSafari;
+    };
+
+    const updateInstallState = () => {
+      const standalone = isStandaloneMode();
+      setIsStandalone(standalone);
+      setShowIosInstallHint(!standalone && isIosSafari());
+    };
+
+    updateInstallState();
+    const media = window.matchMedia("(display-mode: standalone)");
+    const onModeChange = () => updateInstallState();
+    media.addEventListener("change", onModeChange);
+
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const onAppInstalled = () => {
+      setInstallPrompt(null);
+      updateInstallState();
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt as EventListener);
+    window.addEventListener("appinstalled", onAppInstalled);
+
+    return () => {
+      media.removeEventListener("change", onModeChange);
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt as EventListener);
+      window.removeEventListener("appinstalled", onAppInstalled);
+    };
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -272,6 +322,13 @@ export default function WorkerApp() {
     setAuthed(false);
     setProfile(null);
     setEvents([]);
+  };
+
+  const handleInstallApp = async () => {
+    if (!installPrompt || isStandalone) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
   };
 
   if (!ready) {
@@ -360,10 +417,25 @@ export default function WorkerApp() {
               </p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-3 py-2 border border-[#e5e5e5] rounded-lg text-[#000935] hover:bg-[#f9f9f9]">
-            {t.actions.closeSession}
-          </button>
+          <div className="flex items-center gap-2">
+            {installPrompt && !isStandalone && (
+              <button
+                onClick={handleInstallApp}
+                className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8]"
+              >
+                {t.actions.installApp}
+              </button>
+            )}
+            <button onClick={handleLogout} className="px-3 py-2 border border-[#e5e5e5] rounded-lg text-[#000935] hover:bg-[#f9f9f9]">
+              {t.actions.closeSession}
+            </button>
+          </div>
         </div>
+        {showIosInstallHint && !isStandalone && (
+          <div className="bg-white border border-[#e5e5e5] rounded-xl px-4 py-3 text-sm text-[#666666]">
+            {t.status.iosInstallHint}
+          </div>
+        )}
 
         <div className="bg-white border border-[#e5e5e5] rounded-xl p-5">
           <h2 className="font-semibold text-[#000935] mb-3 inline-flex items-center gap-2">

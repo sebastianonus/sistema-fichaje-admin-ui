@@ -61,11 +61,13 @@ export const TEXTS = {
       segmentTotal: 'Total tramo:',
       passwordChangePending: 'Tienes cambio de contrasena pendiente. Puedes fichar hasta el dia limite.',
       passwordChangeBlocking: 'Desde hoy debes cambiar tu contrasena para volver a fichar.',
+      iosInstallHint: 'Para instalar en iPhone: pulsa Compartir y luego "Anadir a pantalla de inicio".',
     },
     actions: {
       clockIn: 'Fichar entrada',
       clockOut: 'Fichar salida',
       closeSession: 'Cerrar sesion',
+      installApp: 'Instalar app',
       updatePassword: 'Actualizar contrasena',
       updatingPassword: 'Actualizando...',
     },
