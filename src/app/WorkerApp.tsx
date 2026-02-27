@@ -8,11 +8,6 @@ import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
 import headerLogo from "@/assets/logo-onus-express-color-2.png";
 import workerLoginBg from "@/assets/login/worker-login-bg.jpg";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-}
-
 interface WorkerProfile {
   id: string;
   full_name: string;
@@ -94,10 +89,8 @@ export default function WorkerApp() {
   const [resetSaving, setResetSaving] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [dismissedResetModal, setDismissedResetModal] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
-  const [showInstallHelp, setShowInstallHelp] = useState(false);
 
   const lastEvent = events[0]?.event_type ?? null;
   const isClockedIn = lastEvent === "CLOCK_IN";
@@ -248,22 +241,8 @@ export default function WorkerApp() {
     const onModeChange = () => updateInstallState();
     media.addEventListener("change", onModeChange);
 
-    const onBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-    };
-    const onAppInstalled = () => {
-      setInstallPrompt(null);
-      updateInstallState();
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt as EventListener);
-    window.addEventListener("appinstalled", onAppInstalled);
-
     return () => {
       media.removeEventListener("change", onModeChange);
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt as EventListener);
-      window.removeEventListener("appinstalled", onAppInstalled);
     };
   }, []);
 
@@ -323,13 +302,6 @@ export default function WorkerApp() {
     setAuthed(false);
     setProfile(null);
     setEvents([]);
-  };
-
-  const handleInstallApp = async () => {
-    if (!installPrompt || isStandalone) return;
-    await installPrompt.prompt();
-    await installPrompt.userChoice;
-    setInstallPrompt(null);
   };
 
   if (!ready) {
@@ -409,43 +381,26 @@ export default function WorkerApp() {
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-4">
         <div className="bg-white border border-[#e5e5e5] rounded-xl p-4 md:p-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-3 min-w-0">
-              <img src={headerLogo} alt="ONUS Express" className="h-7 md:h-8 w-auto mt-0.5 shrink-0" />
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-bold text-[#000935] leading-tight">{t.title}</h1>
-                <p className="text-sm text-[#666666] mt-1 inline-flex items-start gap-1 break-words">
-                  <User className="w-4 h-4 shrink-0 mt-0.5" /> <span className="break-all">{workerName} ({profile?.email})</span>
-                </p>
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <img src={headerLogo} alt="ONUS Express" className="h-7 md:h-8 w-auto mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-2xl font-bold text-[#000935] leading-tight">{t.title}</h1>
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              {(installPrompt || showIosInstallHint) && !isStandalone && (
-                <button
-                  onClick={() => setShowInstallHelp((v) => !v)}
-                  className="px-3 py-2 border border-[#00C9CE] text-[#00C9CE] rounded-lg hover:bg-[#00C9CE]/5"
-                >
-                  {t.actions.installHelp}
-                </button>
-              )}
-              {installPrompt && !isStandalone && (
-                <button
-                  onClick={handleInstallApp}
-                  className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8]"
-                >
-                  {t.actions.installApp}
-                </button>
-              )}
-              <button onClick={handleLogout} className="px-3 py-2 border border-[#e5e5e5] rounded-lg text-[#000935] hover:bg-[#f9f9f9]">
+              <button onClick={handleLogout} className="px-3 py-2 border border-[#e5e5e5] rounded-lg text-[#000935] hover:bg-[#f9f9f9] whitespace-nowrap">
                 {t.actions.closeSession}
               </button>
             </div>
+            <p className="text-sm text-[#666666] inline-flex items-start gap-1 break-words">
+              <User className="w-4 h-4 shrink-0 mt-0.5" /> <span className="break-all">{workerName} ({profile?.email})</span>
+            </p>
           </div>
         </div>
-        {showInstallHelp && !isStandalone && (
-          <div className="bg-white border border-[#e5e5e5] rounded-xl px-4 py-3 text-sm text-[#666666] space-y-1">
-            {showIosInstallHint && <p>{t.status.iosInstallHint}</p>}
-            {installPrompt && <p>{t.status.androidInstallHint}</p>}
+        {showIosInstallHint && !isStandalone && (
+          <div className="bg-white border border-[#e5e5e5] rounded-xl px-4 py-3 text-sm text-[#666666]">
+            {t.status.iosInstallHint}
           </div>
         )}
 
