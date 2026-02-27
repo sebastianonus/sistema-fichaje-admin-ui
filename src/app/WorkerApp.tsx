@@ -350,11 +350,14 @@ export default function WorkerApp() {
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-4">
         <div className="bg-white border border-[#e5e5e5] rounded-xl p-5 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#000935]">{t.title}</h1>
-            <p className="text-sm text-[#666666] mt-1 inline-flex items-center gap-1">
-              <User className="w-4 h-4" /> {workerName} ({profile?.email})
-            </p>
+          <div className="flex items-start gap-3">
+            <img src={logo} alt="ONUS Express" className="h-8 w-auto mt-0.5" />
+            <div>
+              <h1 className="text-2xl font-bold text-[#000935]">{t.title}</h1>
+              <p className="text-sm text-[#666666] mt-1 inline-flex items-center gap-1">
+                <User className="w-4 h-4" /> {workerName} ({profile?.email})
+              </p>
+            </div>
           </div>
           <button onClick={handleLogout} className="px-3 py-2 border border-[#e5e5e5] rounded-lg text-[#000935] hover:bg-[#f9f9f9]">
             {t.actions.closeSession}
