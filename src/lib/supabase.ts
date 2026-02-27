@@ -3,10 +3,13 @@ import { TEXTS } from "@/constants/texts";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const forceWorkerMode = (import.meta.env.VITE_FORCE_WORKER_MODE as string | undefined) === "true";
 
 function getAuthStorageKey() {
   if (typeof window === "undefined") return "onus-auth-admin";
-  return window.location.pathname.startsWith("/worker")
+  const host = window.location.hostname.toLowerCase();
+  const isWorkerDomain = host.includes("worker");
+  return (forceWorkerMode || isWorkerDomain || window.location.pathname.startsWith("/worker"))
     ? "onus-auth-worker"
     : "onus-auth-admin";
 }
