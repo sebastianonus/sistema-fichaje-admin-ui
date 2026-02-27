@@ -5,6 +5,7 @@ import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import { TEXTS } from "@/constants/texts";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
+import headerLogo from "@/assets/logo-onus-express-color-2.png";
 import workerLoginBg from "@/assets/login/worker-login-bg.jpg";
 
 interface WorkerProfile {
@@ -351,7 +352,7 @@ export default function WorkerApp() {
       <div className="max-w-3xl mx-auto space-y-4">
         <div className="bg-white border border-[#e5e5e5] rounded-xl p-5 flex items-center justify-between">
           <div className="flex items-start gap-3">
-            <img src={logo} alt="ONUS Express" className="h-8 w-auto mt-0.5" />
+            <img src={headerLogo} alt="ONUS Express" className="h-8 w-auto mt-0.5" />
             <div>
               <h1 className="text-2xl font-bold text-[#000935]">{t.title}</h1>
               <p className="text-sm text-[#666666] mt-1 inline-flex items-center gap-1">
