@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { Trabajadores } from '@/app/components/trabajadores';
+import { TEXTS } from '@/constants/texts';
 import * as api from '@/lib/api';
 
 vi.mock('@/lib/api');
@@ -11,8 +12,7 @@ describe('Trabajadores', () => {
     render(<Trabajadores />);
 
     await waitFor(() => {
-      expect(screen.getByText(/No hay trabajadores/i)).toBeInTheDocument();
+      expect(screen.getByText(TEXTS.trabajadores.empty.noWorkers.title)).toBeInTheDocument();
     });
   });
 });
-
