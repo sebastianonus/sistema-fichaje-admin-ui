@@ -58,6 +58,8 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState('');
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState('');
 
@@ -67,6 +69,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setError(null);
       const data = await getWorker(workerId);
       setWorker(data);
+      setEmailDraft(data.email ?? '');
       setPhoneDraft(data.phone_number ?? '');
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
@@ -170,6 +173,21 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     }
   };
 
+  const handleEmailSave = async () => {
+    if (!worker) return;
+    try {
+      setSaving(true);
+      setError(null);
+      await updateWorker(worker.id, { email: emailDraft.trim() });
+      setEditingEmail(false);
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="p-8 space-y-6">
@@ -198,7 +216,43 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 </div>
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.email}</label>
-                  <p className="text-[#000935]">{worker.email || TEXTS.common.noData}</p>
+                  {editingEmail ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="email"
+                        value={emailDraft}
+                        onChange={(e) => setEmailDraft(e.target.value)}
+                        placeholder={TEXTS.workerDetail.email.placeholder}
+                        className="px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                      />
+                      <button
+                        onClick={handleEmailSave}
+                        disabled={saving || !emailDraft.trim()}
+                        className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+                      >
+                        {TEXTS.workerDetail.email.save}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEmailDraft(worker.email ?? '');
+                          setEditingEmail(false);
+                        }}
+                        className="px-3 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5]"
+                      >
+                        {TEXTS.workerDetail.email.cancel}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-[#000935]">{worker.email || TEXTS.common.noData}</p>
+                      <button
+                        onClick={() => setEditingEmail(true)}
+                        className="text-[#00C9CE] hover:underline"
+                      >
+                        {TEXTS.workerDetail.email.edit}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.telefono}</label>

@@ -229,6 +229,12 @@ export const TEXTS = {
       edit: 'Editar',
       placeholder: '+34 600000000',
     },
+    email: {
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      edit: 'Editar',
+      placeholder: 'correo@ejemplo.com',
+    },
     filters: {
       fromDate: 'Fecha desde',
       toDate: 'Fecha hasta',
