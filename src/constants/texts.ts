@@ -59,6 +59,8 @@ export const TEXTS = {
       journeyLabel: 'Jornada',
       totalLabel: 'Total:',
       segmentTotal: 'Total tramo:',
+      passwordChangePending: 'Tienes cambio de contrasena pendiente. Puedes fichar hasta el dia limite.',
+      passwordChangeBlocking: 'Desde hoy debes cambiar tu contrasena para volver a fichar.',
     },
     actions: {
       clockIn: 'Fichar entrada',

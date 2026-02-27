@@ -101,6 +101,7 @@ export default function WorkerApp() {
   const resetDeadlineExpired = resetDeadline ? Date.now() > resetDeadline.getTime() : false;
   const showPasswordResetModal = mustChangePassword && (!dismissedResetModal || isDeadlineDayOrLater);
   const canClosePasswordResetModal = mustChangePassword && !isDeadlineDayOrLater;
+  const passwordChangeBlocksClock = mustChangePassword && isDeadlineDayOrLater;
 
   const workerName = useMemo(() => profile?.full_name || t.fallbackWorkerName, [profile]);
   const groupedEvents = useMemo(() => {
@@ -378,19 +379,24 @@ export default function WorkerApp() {
           <div className="flex gap-2">
             <button
               onClick={() => handleClock("CLOCK_IN")}
-              disabled={!profile?.is_active || isClockedIn || actionLoading || mustChangePassword}
+              disabled={!profile?.is_active || isClockedIn || actionLoading || passwordChangeBlocksClock}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50"
             >
               <LogIn className="w-4 h-4" /> {t.actions.clockIn}
             </button>
             <button
               onClick={() => handleClock("CLOCK_OUT")}
-              disabled={!profile?.is_active || !isClockedIn || actionLoading || mustChangePassword}
+              disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] disabled:opacity-50"
             >
               <LogOut className="w-4 h-4" /> {t.actions.clockOut}
             </button>
           </div>
+          {mustChangePassword && (
+            <p className="text-sm text-[#856404] mt-3">
+              {passwordChangeBlocksClock ? t.status.passwordChangeBlocking : t.status.passwordChangePending}
+            </p>
+          )}
           {error && <p className="text-sm text-[#dc2626] mt-3">{error}</p>}
         </div>
 
