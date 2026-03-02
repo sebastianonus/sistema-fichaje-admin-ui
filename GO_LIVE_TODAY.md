@@ -27,11 +27,15 @@
 - Login admin OK.
 - Login worker OK.
 - Clock in / clock out OK.
+- Clock in / clock out solo con GPS valido OK.
 - Activar / desactivar trabajador OK.
 - Reactivar trabajador OK.
+- Correccion auditada de fichajes OK.
+- Incidencias de jornada abierta visibles en admin OK.
 - Export por rango de fechas OK.
 - Export por trabajador especifico OK.
 - Export zona horaria `peninsula` y `canarias` OK.
+- Instalacion en pantalla de inicio (iPhone/Android) OK.
 
 ## 5. Publicacion frontend
 - Build local: `npm run build --silent`.
