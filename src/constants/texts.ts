@@ -83,6 +83,13 @@ export const TEXTS = {
       samePasswordError: 'La nueva contrasena debe ser diferente a la actual',
       updateError: 'No se pudo actualizar la contrasena',
     },
+    shiftReminder: {
+      title: 'Recuerda fichar la salida',
+      message: 'Tu jornada se acerca al limite de 7 horas y media. Cuando finalices, registra la salida para evitar errores.',
+      workedLabel: 'Tiempo acumulado hoy:',
+      targetLabel: 'Aviso previo a:',
+      acknowledge: 'Entendido',
+    },
     errors: {
       generic: 'Error inesperado',
       invalidSession: 'Sesion no valida para trabajador',

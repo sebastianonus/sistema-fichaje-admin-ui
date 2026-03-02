@@ -39,6 +39,9 @@ type ClockLocation = {
   gps_accuracy_m: number | null;
 };
 
+const SHIFT_TARGET_MINUTES = 450;
+const SHIFT_REMINDER_BUFFER_MINUTES = 15;
+
 function isTodayLocal(value: string) {
   const d = new Date(value);
   const now = new Date();
@@ -113,6 +116,9 @@ export default function WorkerApp() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locationWarning, setLocationWarning] = useState<string | null>(null);
+  const [showShiftReminder, setShowShiftReminder] = useState(false);
+  const [dismissedShiftReminderKey, setDismissedShiftReminderKey] = useState<string | null>(null);
+  const [nowTick, setNowTick] = useState(Date.now());
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -188,12 +194,37 @@ export default function WorkerApp() {
       }
     }
 
+    let openMinutesToday = 0;
+    if (openClockIn && isTodayLocal(openClockIn.happened_at)) {
+      openMinutesToday = Math.max(
+        0,
+        Math.round((nowTick - new Date(openClockIn.happened_at).getTime()) / 60000),
+      );
+    }
+
     return {
       durationByClockOutId,
       totalClosedMinutesToday,
       hasClosedToday: totalClosedMinutesToday > 0,
+      openClockIn,
+      openMinutesToday,
+      totalWorkedMinutesToday: totalClosedMinutesToday + openMinutesToday,
     };
-  }, [effectiveEvents]);
+  }, [effectiveEvents, nowTick]);
+
+  const shiftReminderKey = useMemo(() => {
+    if (!workedStats.openClockIn) return null;
+    return `${dayKeyLocal(workedStats.openClockIn.happened_at)}:${workedStats.openClockIn.id}`;
+  }, [workedStats.openClockIn]);
+
+  const shouldShowShiftReminder = Boolean(
+    profile?.is_active &&
+    isClockedIn &&
+    shiftReminderKey &&
+    workedStats.totalWorkedMinutesToday >= (SHIFT_TARGET_MINUTES - SHIFT_REMINDER_BUFFER_MINUTES) &&
+    workedStats.totalWorkedMinutesToday < SHIFT_TARGET_MINUTES + 60 &&
+    dismissedShiftReminderKey !== shiftReminderKey,
+  );
 
   const load = async () => {
     try {
@@ -249,10 +280,36 @@ export default function WorkerApp() {
   }, [authed]);
 
   useEffect(() => {
+    if (!authed) return;
+    const id = window.setInterval(() => {
+      setNowTick(Date.now());
+    }, 30000);
+    return () => window.clearInterval(id);
+  }, [authed]);
+
+  useEffect(() => {
     if (!mustChangePassword) {
       setDismissedResetModal(false);
     }
   }, [mustChangePassword]);
+
+  useEffect(() => {
+    if (!isClockedIn || !shiftReminderKey) {
+      setShowShiftReminder(false);
+      return;
+    }
+
+    if (shouldShowShiftReminder) {
+      setShowShiftReminder(true);
+    }
+  }, [isClockedIn, shiftReminderKey, shouldShowShiftReminder]);
+
+  useEffect(() => {
+    if (!dismissedShiftReminderKey || !shiftReminderKey) return;
+    if (dismissedShiftReminderKey !== shiftReminderKey) {
+      setDismissedShiftReminderKey(null);
+    }
+  }, [dismissedShiftReminderKey, shiftReminderKey]);
 
   useEffect(() => {
     const isStandaloneMode = () =>
@@ -346,6 +403,8 @@ export default function WorkerApp() {
     setProfile(null);
     setEvents([]);
     setLocationWarning(null);
+    setShowShiftReminder(false);
+    setDismissedShiftReminderKey(null);
   };
 
   if (!ready) {
@@ -596,6 +655,34 @@ export default function WorkerApp() {
                 {resetSaving ? t.actions.updatingPassword : t.actions.updatePassword}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {showShiftReminder && (
+        <div className="fixed inset-0 z-40 bg-[#000935]/55 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-[#d9e3ee] rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-5 bg-[#fff7ed] border-b border-[#fdba74]">
+              <h2 className="text-xl font-bold text-[#9a3412]">{t.shiftReminder.title}</h2>
+              <p className="text-sm text-[#9a3412] mt-2">{t.shiftReminder.message}</p>
+            </div>
+            <div className="p-6 space-y-3">
+              <p className="text-sm text-[#666666]">
+                {t.shiftReminder.workedLabel} <strong className="text-[#000935]">{formatMinutes(workedStats.totalWorkedMinutesToday)}</strong>
+              </p>
+              <p className="text-sm text-[#666666]">
+                {t.shiftReminder.targetLabel} <strong className="text-[#000935]">{formatMinutes(SHIFT_TARGET_MINUTES)}</strong>
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowShiftReminder(false);
+                  if (shiftReminderKey) setDismissedShiftReminderKey(shiftReminderKey);
+                }}
+                className="w-full px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8]"
+              >
+                {t.shiftReminder.acknowledge}
+              </button>
+            </div>
           </div>
         </div>
       )}
