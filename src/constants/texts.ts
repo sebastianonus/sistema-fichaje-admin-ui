@@ -62,6 +62,7 @@ export const TEXTS = {
       passwordChangePending: 'Tienes cambio de contrasena pendiente. Puedes fichar hasta el dia limite.',
       passwordChangeBlocking: 'Desde hoy debes cambiar tu contrasena para volver a fichar.',
       iosInstallHint: 'Para instalar en iPhone: pulsa Compartir y luego "Anadir a pantalla de inicio".',
+      gpsMissingWarning: 'No se pudo obtener la ubicacion en este fichaje. Revisa permisos, GPS y cobertura.',
     },
     actions: {
       clockIn: 'Fichar entrada',

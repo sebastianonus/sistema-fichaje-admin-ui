@@ -112,6 +112,7 @@ export default function WorkerApp() {
   const [loadingData, setLoadingData] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locationWarning, setLocationWarning] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -323,8 +324,15 @@ export default function WorkerApp() {
     try {
       setActionLoading(true);
       setError(null);
+      setLocationWarning(null);
       const location = await getCurrentLocation();
+      if (!location) {
+        setLocationWarning(t.status.gpsMissingWarning);
+      }
       await sendClockEvent(eventType, undefined, location ?? undefined);
+      if (location) {
+        setLocationWarning(null);
+      }
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.errors.clockError);
@@ -338,6 +346,7 @@ export default function WorkerApp() {
     setAuthed(false);
     setProfile(null);
     setEvents([]);
+    setLocationWarning(null);
   };
 
   if (!ready) {
@@ -398,7 +407,7 @@ export default function WorkerApp() {
               </div>
             </div>
 
-            {error && <p className="text-sm text-[#dc2626]">{error}</p>}
+          {error && <p className="text-sm text-[#dc2626]">{error}</p>}
 
             <button
               type="submit"
@@ -437,6 +446,11 @@ export default function WorkerApp() {
         {showIosInstallHint && !isStandalone && (
           <div className="bg-white border border-[#e5e5e5] rounded-xl px-4 py-3 text-sm text-[#666666]">
             {t.status.iosInstallHint}
+          </div>
+        )}
+        {locationWarning && (
+          <div className="bg-[#fff7ed] border border-[#fdba74] rounded-xl px-4 py-3 text-sm text-[#9a3412]">
+            {locationWarning}
           </div>
         )}
 
