@@ -74,6 +74,8 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   const [editingEmail, setEditingEmail] = useState(false);
   const [emailDraft, setEmailDraft] = useState('');
   const [editingPhone, setEditingPhone] = useState(false);
@@ -90,6 +92,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       setError(null);
       const data = await getWorker(workerId);
       setWorker(data);
+      setNameDraft(data.full_name ?? '');
       setEmailDraft(data.email ?? '');
       setPhoneDraft(data.phone_number ?? '');
     } catch (err) {
@@ -186,11 +189,38 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
 
   const handlePhoneSave = async () => {
     if (!worker) return;
+    const normalizedDraft = phoneDraft.trim();
+    const currentPhone = worker.phone_number ?? '';
+    if (normalizedDraft === currentPhone) {
+      setEditingPhone(false);
+      return;
+    }
     try {
       setSaving(true);
       setError(null);
-      await updateWorker(worker.id, { phone_number: phoneDraft.trim() });
+      await updateWorker(worker.id, { phone_number: normalizedDraft || null });
       setEditingPhone(false);
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleNameSave = async () => {
+    if (!worker) return;
+    const normalizedDraft = nameDraft.trim();
+    if (!normalizedDraft) return;
+    if (normalizedDraft === worker.full_name) {
+      setEditingName(false);
+      return;
+    }
+    try {
+      setSaving(true);
+      setError(null);
+      await updateWorker(worker.id, { full_name: normalizedDraft });
+      setEditingName(false);
       await fetchWorker();
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
@@ -201,10 +231,17 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
 
   const handleEmailSave = async () => {
     if (!worker) return;
+    const normalizedDraft = emailDraft.trim();
+    const currentEmail = worker.email ?? '';
+    if (!normalizedDraft) return;
+    if (normalizedDraft === currentEmail) {
+      setEditingEmail(false);
+      return;
+    }
     try {
       setSaving(true);
       setError(null);
-      await updateWorker(worker.id, { email: emailDraft.trim() });
+      await updateWorker(worker.id, { email: normalizedDraft });
       setEditingEmail(false);
       await fetchWorker();
     } catch (err) {
@@ -272,7 +309,43 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.nombre}</label>
-                  <p className="text-[#000935]">{worker.full_name}</p>
+                  {editingName ? (
+                    <div className="flex flex-wrap items-start gap-2">
+                      <input
+                        type="text"
+                        value={nameDraft}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        placeholder={TEXTS.createWorker.fields.placeholders.fullName}
+                        className="px-3 py-2 border border-[#e5e5e5] rounded-lg min-w-0 flex-1 w-full sm:w-auto"
+                      />
+                      <button
+                        onClick={handleNameSave}
+                        disabled={saving || !nameDraft.trim()}
+                        className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+                      >
+                        {TEXTS.workerDetail.actions.save}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setNameDraft(worker.full_name);
+                          setEditingName(false);
+                        }}
+                        className="px-3 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5]"
+                      >
+                        {TEXTS.workerDetail.actions.cancel}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-start gap-2">
+                      <p className="text-[#000935] min-w-0 flex-1 break-words">{worker.full_name}</p>
+                      <button
+                        onClick={() => setEditingName(true)}
+                        className="text-[#00C9CE] hover:underline shrink-0"
+                      >
+                        {TEXTS.workerDetail.actions.edit}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.email}</label>

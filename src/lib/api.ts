@@ -97,7 +97,7 @@ export async function createWorker(worker: {
 export async function updateWorker(workerId: string, updates: {
   full_name?: string;
   email?: string;
-  phone_number?: string;
+  phone_number?: string | null;
 }) {
   const res = await request<ApiEnvelope<{ worker_id: string }>>(`/admin-workers/${workerId}`, {
     method: "PATCH",
