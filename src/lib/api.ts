@@ -106,6 +106,19 @@ export async function updateWorker(workerId: string, updates: {
   return res.data;
 }
 
+export async function correctWorkerEvent(payload: {
+  related_event_id: string;
+  corrected_event_type: "CLOCK_IN" | "CLOCK_OUT";
+  corrected_happened_at: string;
+  note: string;
+}) {
+  const res = await request<ApiEnvelope<{ id: string }>>("/correction", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
 export async function deactivateWorker(workerId: string) {
   const res = await request<ApiEnvelope<{ worker_id: string; is_active: false }>>(`/admin-workers/${workerId}/deactivate`, {
     method: "PATCH",

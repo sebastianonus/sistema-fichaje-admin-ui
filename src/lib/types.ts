@@ -33,7 +33,10 @@ export interface WorkerDetail {
     id: string;
     event_type: string;
     happened_at: string;
-    note?: string;
+    note?: string | null;
+    related_event_id?: string | null;
+    corrected_event_type?: string | null;
+    corrected_happened_at?: string | null;
   }>;
 }
 

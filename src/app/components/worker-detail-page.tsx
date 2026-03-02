@@ -3,7 +3,8 @@ import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { TEXTS } from '@/constants/texts';
-import { activateWorker, changeWorkerPassword, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
+import { activateWorker, changeWorkerPassword, correctWorkerEvent, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
+import { buildEffectiveTimeEvents } from '@/lib/time-events';
 import type { WorkerDetail } from '@/lib/types';
 
 interface WorkerDetailPageProps {
@@ -19,6 +20,16 @@ function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h}h ${m.toString().padStart(2, '0')}m`;
+}
+
+function toDateTimeLocalValue(value: string) {
+  const d = new Date(value);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
 function closedMinutesFromEvents(events: WorkerDetail['time_events']) {
@@ -62,6 +73,11 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [emailDraft, setEmailDraft] = useState('');
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState('');
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [selectedCorrectionEventId, setSelectedCorrectionEventId] = useState<string | null>(null);
+  const [correctionType, setCorrectionType] = useState<'CLOCK_IN' | 'CLOCK_OUT'>('CLOCK_IN');
+  const [correctionAt, setCorrectionAt] = useState('');
+  const [correctionNote, setCorrectionNote] = useState('');
 
   const fetchWorker = async () => {
     try {
@@ -82,8 +98,13 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     fetchWorker();
   }, [workerId]);
 
+  const effectiveEvents = useMemo(
+    () => buildEffectiveTimeEvents(worker?.time_events ?? []),
+    [worker?.time_events],
+  );
+
   const filteredEvents = useMemo(() => {
-    const events = [...(worker?.time_events ?? [])].sort(
+    const events = [...effectiveEvents].sort(
       (a, b) => new Date(b.happened_at).getTime() - new Date(a.happened_at).getTime(),
     );
 
@@ -95,10 +116,10 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     });
 
     return byDate.slice(0, maxEvents);
-  }, [worker?.time_events, dateFrom, dateTo, maxEvents]);
+  }, [effectiveEvents, dateFrom, dateTo, maxEvents]);
 
   const groupedFilteredEvents = useMemo(() => {
-    const grouped = new Map<string, WorkerDetail['time_events']>();
+    const grouped = new Map<string, Array<(typeof filteredEvents)[number]>>();
     for (const ev of filteredEvents) {
       const key = localDay(ev.happened_at);
       const bucket = grouped.get(key);
@@ -188,6 +209,40 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     }
   };
 
+  const openCorrectionModal = (event: (typeof filteredEvents)[number]) => {
+    setSelectedCorrectionEventId(event.id);
+    setCorrectionType((event.event_type === 'CLOCK_OUT' ? 'CLOCK_OUT' : 'CLOCK_IN'));
+    setCorrectionAt(toDateTimeLocalValue(event.happened_at));
+    setCorrectionNote('');
+    setShowCorrectionModal(true);
+  };
+
+  const closeCorrectionModal = () => {
+    setShowCorrectionModal(false);
+    setSelectedCorrectionEventId(null);
+    setCorrectionNote('');
+  };
+
+  const handleCorrectionSave = async () => {
+    if (!selectedCorrectionEventId || !correctionAt.trim() || !correctionNote.trim()) return;
+    try {
+      setSaving(true);
+      setError(null);
+      await correctWorkerEvent({
+        related_event_id: selectedCorrectionEventId,
+        corrected_event_type: correctionType,
+        corrected_happened_at: new Date(correctionAt).toISOString(),
+        note: correctionNote.trim(),
+      });
+      closeCorrectionModal();
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="p-8 space-y-6">
@@ -217,13 +272,13 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.email}</label>
                   {editingEmail ? (
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-start gap-2">
                       <input
                         type="email"
                         value={emailDraft}
                         onChange={(e) => setEmailDraft(e.target.value)}
                         placeholder={TEXTS.workerDetail.email.placeholder}
-                        className="px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                        className="px-3 py-2 border border-[#e5e5e5] rounded-lg min-w-0 flex-1 w-full sm:w-auto"
                       />
                       <button
                         onClick={handleEmailSave}
@@ -243,11 +298,11 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <p className="text-[#000935]">{worker.email || TEXTS.common.noData}</p>
+                    <div className="flex flex-wrap items-start gap-2">
+                      <p className="text-[#000935] min-w-0 flex-1 break-all">{worker.email || TEXTS.common.noData}</p>
                       <button
                         onClick={() => setEditingEmail(true)}
-                        className="text-[#00C9CE] hover:underline"
+                        className="text-[#00C9CE] hover:underline shrink-0"
                       >
                         {TEXTS.workerDetail.email.edit}
                       </button>
@@ -257,13 +312,13 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.telefono}</label>
                   {editingPhone ? (
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-start gap-2">
                       <input
                         type="text"
                         value={phoneDraft}
                         onChange={(e) => setPhoneDraft(e.target.value)}
                         placeholder={TEXTS.workerDetail.phone.placeholder}
-                        className="px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                        className="px-3 py-2 border border-[#e5e5e5] rounded-lg min-w-0 flex-1 w-full sm:w-auto"
                       />
                       <button
                         onClick={handlePhoneSave}
@@ -283,11 +338,11 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <p className="text-[#000935]">{worker.phone_number || TEXTS.common.noData}</p>
+                    <div className="flex flex-wrap items-start gap-2">
+                      <p className="text-[#000935] min-w-0 flex-1 break-all">{worker.phone_number || TEXTS.common.noData}</p>
                       <button
                         onClick={() => setEditingPhone(true)}
-                        className="text-[#00C9CE] hover:underline"
+                        className="text-[#00C9CE] hover:underline shrink-0"
                       >
                         {TEXTS.workerDetail.phone.edit}
                       </button>
@@ -328,7 +383,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
             </div>
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
-              <WorkdayTimeline events={worker.time_events} title={TEXTS.workerPortal.sections.timelineTitle} />
+              <WorkdayTimeline events={effectiveEvents} title={TEXTS.workerPortal.sections.timelineTitle} />
             </div>
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
@@ -381,13 +436,45 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                       </summary>
                       <div className="px-3 pb-3 space-y-2">
                         {group.events.map((event) => (
-                          <div key={event.id} className="flex justify-between items-start p-3 bg-[#f9f9f9] rounded-lg">
-                            <div>
-                              <div className="font-medium text-[#000935]">{event.event_type}</div>
-                              {event.note && <div className="text-sm text-[#666666] mt-1">{event.note}</div>}
+                          <div key={event.id} className="flex flex-wrap justify-between items-start gap-3 p-3 bg-[#f9f9f9] rounded-lg">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <div className="font-medium text-[#000935]">{event.event_type}</div>
+                                {event.corrected && (
+                                  <span className="inline-flex px-2 py-0.5 text-[11px] rounded-full bg-[#00C9CE]/10 text-[#0f766e]">
+                                    {TEXTS.workerDetail.correction.correctedBadge}
+                                  </span>
+                                )}
+                              </div>
+                              {event.corrected && (
+                                <div className="text-sm text-[#666666] mt-1 break-words">
+                                  {TEXTS.workerDetail.correction.originalLabel}{' '}
+                                  {event.original_event_type} {new Date(event.original_happened_at ?? event.happened_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                              )}
+                              {event.correction_note && (
+                                <div className="text-sm text-[#666666] mt-1 break-words">
+                                  {TEXTS.workerDetail.correction.reasonLabel} {event.correction_note}
+                                </div>
+                              )}
+                              {event.note && !event.correction_note && (
+                                <div className="text-sm text-[#666666] mt-1 break-words">{event.note}</div>
+                              )}
                             </div>
-                            <div className="text-sm text-[#666666]">
-                              {new Date(event.happened_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="text-sm text-[#666666]">
+                                {new Date(event.happened_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                              {(event.event_type === 'CLOCK_IN' || event.event_type === 'CLOCK_OUT') && (
+                                <button
+                                  type="button"
+                                  onClick={() => openCorrectionModal(event)}
+                                  disabled={saving || event.corrected}
+                                  className="text-sm text-[#00C9CE] hover:underline disabled:opacity-50 disabled:no-underline"
+                                >
+                                  {event.corrected ? TEXTS.workerDetail.correction.alreadyCorrected : TEXTS.workerDetail.correction.action}
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -456,6 +543,62 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 className="px-4 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5] transition-colors"
               >
                 {TEXTS.workerPassword.actions.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCorrectionModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg p-6">
+            <h3 className="mb-2">{TEXTS.workerDetail.correction.title}</h3>
+            <p className="text-sm text-[#666666] mb-4">{TEXTS.workerDetail.correction.description}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-2">{TEXTS.workerDetail.correction.eventType}</label>
+                <select
+                  value={correctionType}
+                  onChange={(e) => setCorrectionType(e.target.value as 'CLOCK_IN' | 'CLOCK_OUT')}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                >
+                  <option value="CLOCK_IN">CLOCK_IN</option>
+                  <option value="CLOCK_OUT">CLOCK_OUT</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-2">{TEXTS.workerDetail.correction.happenedAt}</label>
+                <input
+                  type="datetime-local"
+                  value={correctionAt}
+                  onChange={(e) => setCorrectionAt(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block mb-2">{TEXTS.workerDetail.correction.note}</label>
+                <textarea
+                  value={correctionNote}
+                  onChange={(e) => setCorrectionNote(e.target.value)}
+                  placeholder={TEXTS.workerDetail.correction.notePlaceholder}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg resize-none"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <button
+                onClick={handleCorrectionSave}
+                disabled={saving || !correctionAt.trim() || !correctionNote.trim()}
+                className="px-4 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+              >
+                {TEXTS.workerDetail.correction.submit}
+              </button>
+              <button
+                onClick={closeCorrectionModal}
+                className="px-4 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5]"
+              >
+                {TEXTS.workerDetail.correction.cancel}
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
 import { changeCurrentUserPassword, ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
+import { buildEffectiveTimeEvents } from "@/lib/time-events";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import { TEXTS } from "@/constants/texts";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
@@ -24,6 +25,9 @@ interface WorkerEvent {
   event_type: string;
   happened_at: string;
   note?: string | null;
+  related_event_id?: string | null;
+  corrected_event_type?: string | null;
+  corrected_happened_at?: string | null;
 }
 
 function isTodayLocal(value: string) {
@@ -92,7 +96,8 @@ export default function WorkerApp() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
 
-  const lastEvent = events[0]?.event_type ?? null;
+  const effectiveEvents = useMemo(() => buildEffectiveTimeEvents(events), [events]);
+  const lastEvent = effectiveEvents[0]?.event_type ?? null;
   const isClockedIn = lastEvent === "CLOCK_IN";
 
   const mustChangePassword = profile?.password_reset_required === true;
@@ -109,7 +114,7 @@ export default function WorkerApp() {
   const workerName = useMemo(() => profile?.full_name || t.fallbackWorkerName, [profile]);
   const groupedEvents = useMemo(() => {
     const grouped = new Map<string, WorkerEvent[]>();
-    for (const ev of events) {
+    for (const ev of effectiveEvents) {
       const key = dayKeyLocal(ev.happened_at);
       const bucket = grouped.get(key);
       if (bucket) bucket.push(ev);
@@ -121,10 +126,10 @@ export default function WorkerApp() {
       events: dayEvents,
       totalClosedMinutes: closedMinutesFromEvents(dayEvents),
     }));
-  }, [events]);
+  }, [effectiveEvents]);
 
   const workedStats = useMemo(() => {
-    const asc = [...events].sort(
+    const asc = [...effectiveEvents].sort(
       (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
     );
 
@@ -157,7 +162,7 @@ export default function WorkerApp() {
       totalClosedMinutesToday,
       hasClosedToday: totalClosedMinutesToday > 0,
     };
-  }, [events]);
+  }, [effectiveEvents]);
 
   const load = async () => {
     try {
@@ -166,7 +171,7 @@ export default function WorkerApp() {
       const p = await getWorkerProfile();
       const ev = await getMyTimeEvents();
       setProfile(p);
-      setEvents(ev);
+      setEvents(ev as WorkerEvent[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.errors.generic);
     } finally {
@@ -443,7 +448,7 @@ export default function WorkerApp() {
           {error && <p className="text-sm text-[#dc2626] mt-3">{error}</p>}
         </div>
 
-        <WorkdayTimeline events={events} title={t.sections.timelineTitle} />
+        <WorkdayTimeline events={effectiveEvents} title={t.sections.timelineTitle} />
 
         <div className="bg-white border border-[#e5e5e5] rounded-xl p-5">
           <h2 className="font-semibold text-[#000935] mb-3">{t.sections.latestEvents}</h2>
