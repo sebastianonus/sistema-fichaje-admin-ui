@@ -12,7 +12,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['onus-192x192.png', 'onus-512x512.png', 'apple-touch-icon-onus.png', 'favicon-onus.ico', 'favicon-onus.png'],
+      includeAssets: ['favicon-onus.png', 'apple-touch-icon-onus.png', 'onus-192x192.png', 'onus-512x512.png'],
       manifest: {
         name: 'ONUS Worker',
         short_name: 'ONUS Worker',
