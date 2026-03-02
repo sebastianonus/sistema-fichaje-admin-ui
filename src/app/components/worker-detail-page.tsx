@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, MapPin } from 'lucide-react';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { TEXTS } from '@/constants/texts';
@@ -473,18 +473,9 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                                     {typeof event.gps_accuracy_m === 'number' && Number.isFinite(event.gps_accuracy_m) && (
                                       <> | {TEXTS.workerDetail.location.accuracy} {Math.round(event.gps_accuracy_m)} m</>
                                     )}
-                                    {' '}
-                                    <a
-                                      href={`https://www.google.com/maps?q=${event.latitude},${event.longitude}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-[#00C9CE] hover:underline"
-                                    >
-                                      {TEXTS.workerDetail.location.openMap}
-                                    </a>
-                                  </>
-                                ) : (
-                                  TEXTS.workerDetail.location.noData
+                                    </>
+                                  ) : (
+                                    TEXTS.workerDetail.location.noData
                                 )}
                               </div>
                             </div>
@@ -492,6 +483,18 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                               <div className="text-sm text-[#666666]">
                                 {new Date(event.happened_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                               </div>
+                              {formatCoordinate(event.latitude) && formatCoordinate(event.longitude) && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${event.latitude},${event.longitude}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center justify-center text-[#00C9CE] hover:text-[#0f766e]"
+                                  aria-label={TEXTS.workerDetail.location.openMap}
+                                  title={TEXTS.workerDetail.location.openMap}
+                                >
+                                  <MapPin className="w-4 h-4" />
+                                </a>
+                              )}
                               {(event.event_type === 'CLOCK_IN' || event.event_type === 'CLOCK_OUT') && (
                                 <button
                                   type="button"
