@@ -334,6 +334,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.nombre}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.email}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.telefono}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.incidencia}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.activo}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.creado}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.ultimoEvento}</th>
@@ -358,6 +359,18 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                       <td className="px-6 py-4 whitespace-nowrap"><div className="font-medium text-[#000935]">{worker.full_name}</div></td>
                       <td className="px-6 py-4 whitespace-nowrap text-[#666666]">{worker.email || TEXTS.common.noData}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-[#666666]">{worker.phone_number || TEXTS.common.noData}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {worker.open_incident ? (
+                          <div className="flex flex-col">
+                            <span className="inline-flex px-2 py-1 text-xs rounded-full bg-[#fef2f2] text-[#dc2626]">
+                              {TEXTS.trabajadores.incidents.badge}
+                            </span>
+                            <span className="text-xs text-[#999999] mt-1">
+                              {TEXTS.trabajadores.incidents.longOpenShift}
+                            </span>
+                          </div>
+                        ) : TEXTS.trabajadores.table.noEvent}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs rounded-full ${worker.is_active ? 'bg-[#00C9CE]/10 text-[#00C9CE]' : 'bg-[#f5f5f5] text-[#666666]'}`}>
                           {worker.is_active ? TEXTS.trabajadores.table.status.active : TEXTS.trabajadores.table.status.inactive}

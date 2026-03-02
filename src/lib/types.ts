@@ -7,6 +7,14 @@ export interface DashboardMetrics {
     full_name: string;
     clock_in_time: string;
   }>;
+  open_incidents_count: number;
+  open_incidents: Array<{
+    id: string;
+    full_name: string;
+    email: string;
+    phone_number?: string | null;
+    detected_at: string;
+  }>;
 }
 
 export interface WorkerSummary {
@@ -20,6 +28,10 @@ export interface WorkerSummary {
     event_type: string;
     happened_at: string;
   } | null;
+  open_incident: {
+    incident_type: string;
+    detected_at: string;
+  } | null;
 }
 
 export interface WorkerDetail {
@@ -29,6 +41,13 @@ export interface WorkerDetail {
   phone_number?: string | null;
   is_active: boolean;
   created_at: string;
+  open_incidents?: Array<{
+    id: string;
+    incident_type: string;
+    status: string;
+    detected_at: string;
+    note?: string | null;
+  }>;
   time_events: Array<{
     id: string;
     event_type: string;

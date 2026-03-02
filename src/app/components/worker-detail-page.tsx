@@ -392,6 +392,24 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
             </div>
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+              <h3 className="mb-4">{TEXTS.workerDetail.sections.incidents}</h3>
+              {worker.open_incidents && worker.open_incidents.length > 0 ? (
+                <div className="space-y-2">
+                  {worker.open_incidents.map((incident) => (
+                    <div key={incident.id} className="p-3 rounded-lg bg-[#fef2f2] border border-[#fecaca]">
+                      <div className="font-medium text-[#991b1b]">{TEXTS.workerDetail.incidents.longOpenShift}</div>
+                      <div className="text-sm text-[#7f1d1d] mt-1">
+                        {TEXTS.workerDetail.incidents.detectedAt} {new Date(incident.detected_at).toLocaleString('es-ES')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#666666]">{TEXTS.workerDetail.incidents.empty}</p>
+              )}
+            </div>
+
+            <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
               <div className="flex flex-wrap items-end gap-3 mb-4">
                 <div>
                   <label className="block text-sm mb-1">{TEXTS.workerDetail.filters.fromDate}</label>

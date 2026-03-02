@@ -105,6 +105,7 @@ export const TEXTS = {
       activeWorkers: 'Trabajadores activos',
       clockedInWorkers: 'Trabajadores fichados ahora',
       todayEvents: 'Eventos hoy',
+      openIncidents: 'Incidencias abiertas',
       moreWorkers: 'mas',
     },
     actions: {
@@ -113,6 +114,12 @@ export const TEXTS = {
       viewActive: 'Ver activos',
       viewClockedIn: 'Ver fichados ahora',
       goToExports: 'Ir a exports',
+      viewIncidents: 'Ver incidencias',
+    },
+    incidents: {
+      longOpenShift: 'Jornada abierta demasiado tiempo',
+      detectedAt: 'Detectada:',
+      noPhone: 'Sin telefono',
     },
     errors: {
       loadError: 'Error al cargar',
@@ -148,6 +155,7 @@ export const TEXTS = {
         nombre: 'Nombre',
         email: 'Email',
         telefono: 'Telefono',
+        incidencia: 'Incidencia',
         activo: 'Activo',
         creado: 'Creado',
         ultimoEvento: 'Ultimo evento',
@@ -182,6 +190,10 @@ export const TEXTS = {
     info: {
       onboardingSummary: 'Mensajes preparados: {ready}. Sin telefono: {noPhone}. Fallidos: {failed}.',
     },
+    incidents: {
+      longOpenShift: 'Jornada abierta demasiado tiempo',
+      badge: 'Incidencia abierta',
+    },
     errors: {
       selectAtLeastOne: 'Selecciona al menos un trabajador para enviar credenciales.',
       generic: 'Error inesperado',
@@ -192,6 +204,7 @@ export const TEXTS = {
     title: 'Detalle de trabajador',
     sections: {
       basicInfo: 'Informacion basica',
+      incidents: 'Incidencias abiertas',
       password: 'Contrasena',
       timeEvents: 'Historial de fichajes',
       dangerZone: 'Acciones peligrosas',
@@ -265,6 +278,11 @@ export const TEXTS = {
       noData: 'Sin GPS',
       accuracy: 'Precision:',
       openMap: 'Ver mapa',
+    },
+    incidents: {
+      longOpenShift: 'Jornada abierta demasiado tiempo',
+      detectedAt: 'Detectada:',
+      empty: 'Sin incidencias abiertas',
     },
     filters: {
       fromDate: 'Fecha desde',

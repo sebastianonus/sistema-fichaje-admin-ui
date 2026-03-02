@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
-import { Users, UserCheck, Clock, Plus, Download } from 'lucide-react';
+import { Users, UserCheck, Clock, Plus, Download, AlertTriangle } from 'lucide-react';
 import { Page } from '@/app/App';
 import { TEXTS } from '@/constants/texts';
 import { getDashboardMetrics } from '@/lib/api';
@@ -102,6 +102,28 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
           actionLabel={TEXTS.dashboard.actions.goToExports}
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.events_today ?? TEXTS.common.noData}</div>
+        </MetricCard>
+
+        <MetricCard
+          title={TEXTS.dashboard.cards.openIncidents}
+          icon={AlertTriangle}
+          loading={loading}
+          error={error}
+          onRetry={fetchMetrics}
+          onClick={() => onNavigate('trabajadores')}
+          actionLabel={TEXTS.dashboard.actions.viewIncidents}
+        >
+          <div className="text-3xl font-bold text-[#000935]">{data?.open_incidents_count ?? TEXTS.common.noData}</div>
+          {!!data?.open_incidents?.length && (
+            <div className="mt-4 space-y-2">
+              {data.open_incidents.slice(0, 3).map((incident) => (
+                <div key={`${incident.id}-${incident.detected_at}`} className="text-sm">
+                  <div className="font-medium text-[#000935]">{incident.full_name}</div>
+                  <div className="text-[#666666]">{incident.phone_number || incident.email || TEXTS.dashboard.incidents.noPhone}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </MetricCard>
       </div>
     </div>
