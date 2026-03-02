@@ -96,8 +96,8 @@ async function getCurrentLocation(): Promise<ClockLocation | null> {
       () => resolve(null),
       {
         enableHighAccuracy: true,
-        timeout: 8000,
-        maximumAge: 30000,
+        timeout: 15000,
+        maximumAge: 0,
       },
     );
   });
@@ -328,11 +328,10 @@ export default function WorkerApp() {
       const location = await getCurrentLocation();
       if (!location) {
         setLocationWarning(t.status.gpsMissingWarning);
+        throw new Error(t.errors.gpsRequired);
       }
-      await sendClockEvent(eventType, undefined, location ?? undefined);
-      if (location) {
-        setLocationWarning(null);
-      }
+      await sendClockEvent(eventType, undefined, location);
+      setLocationWarning(null);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.errors.clockError);

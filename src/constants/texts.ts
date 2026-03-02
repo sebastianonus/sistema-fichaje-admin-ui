@@ -87,6 +87,7 @@ export const TEXTS = {
       generic: 'Error inesperado',
       invalidSession: 'Sesion no valida para trabajador',
       clockError: 'No se pudo registrar el evento',
+      gpsRequired: 'No se pudo obtener tu ubicacion. Activa permisos y espera a que el GPS se cargue antes de fichar.',
     },
   },
 
