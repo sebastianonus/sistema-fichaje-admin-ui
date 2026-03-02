@@ -99,7 +99,7 @@ export async function updateWorker(workerId: string, updates: {
   email?: string;
   phone_number?: string | null;
 }) {
-  const res = await request<ApiEnvelope<{ worker_id: string }>>(`/admin-workers/${workerId}`, {
+  const res = await request<ApiEnvelope<{ worker_id: string; warning?: string; auth_email_synced?: boolean; noop?: boolean }>>(`/admin-workers/${workerId}`, {
     method: "PATCH",
     body: JSON.stringify(updates),
   });

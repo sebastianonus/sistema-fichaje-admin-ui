@@ -64,6 +64,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [worker, setWorker] = useState<WorkerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -198,6 +199,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     try {
       setSaving(true);
       setError(null);
+      setInfo(null);
       await updateWorker(worker.id, { phone_number: normalizedDraft || null });
       setEditingPhone(false);
       await fetchWorker();
@@ -219,6 +221,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     try {
       setSaving(true);
       setError(null);
+      setInfo(null);
       await updateWorker(worker.id, { full_name: normalizedDraft });
       setEditingName(false);
       await fetchWorker();
@@ -241,7 +244,11 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     try {
       setSaving(true);
       setError(null);
-      await updateWorker(worker.id, { email: normalizedDraft });
+      setInfo(null);
+      const result = await updateWorker(worker.id, { email: normalizedDraft });
+      if (result.warning === 'AUTH_USER_EMAIL_SYNC_FAILED') {
+        setInfo('Email actualizado en la ficha. El acceso de ese usuario en Auth requiere revision adicional.');
+      }
       setEditingEmail(false);
       await fetchWorker();
     } catch (err) {
@@ -301,6 +308,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
 
         {loading && <p className="text-[#666666]">{TEXTS.common.loading}</p>}
         {error && <div className="p-3 bg-[#fef2f2] border border-[#dc2626] rounded-lg text-sm text-[#dc2626]">{error}</div>}
+        {info && <div className="p-3 bg-[#fff7ed] border border-[#fdba74] rounded-lg text-sm text-[#9a3412]">{info}</div>}
 
         {!loading && worker && (
           <>
