@@ -2,6 +2,11 @@ import { supabase } from "@/lib/supabase";
 import { TEXTS } from "@/constants/texts";
 
 type ClockEventType = "CLOCK_IN" | "CLOCK_OUT";
+type ClockLocation = {
+  latitude?: number | null;
+  longitude?: number | null;
+  gps_accuracy_m?: number | null;
+};
 
 function getFunctionsBaseUrl() {
   const custom = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL as string | undefined;
@@ -49,7 +54,7 @@ export async function getMyTimeEvents(limit = 20) {
   return data ?? [];
 }
 
-export async function sendClockEvent(event_type: ClockEventType, note?: string) {
+export async function sendClockEvent(event_type: ClockEventType, note?: string, location?: ClockLocation) {
   const token = await getSessionToken();
   const res = await fetch(`${getFunctionsBaseUrl()}/clock`, {
     method: "POST",
@@ -57,7 +62,13 @@ export async function sendClockEvent(event_type: ClockEventType, note?: string) 
       "content-type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ event_type, note: note || null }),
+    body: JSON.stringify({
+      event_type,
+      note: note || null,
+      latitude: location?.latitude ?? null,
+      longitude: location?.longitude ?? null,
+      gps_accuracy_m: location?.gps_accuracy_m ?? null,
+    }),
   });
 
   const raw = await res.text();

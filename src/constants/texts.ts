@@ -251,6 +251,12 @@ export const TEXTS = {
       originalLabel: 'Original:',
       reasonLabel: 'Motivo:',
     },
+    location: {
+      label: 'Ubicacion:',
+      noData: 'Sin GPS',
+      accuracy: 'Precision:',
+      openMap: 'Ver mapa',
+    },
     filters: {
       fromDate: 'Fecha desde',
       toDate: 'Fecha hasta',

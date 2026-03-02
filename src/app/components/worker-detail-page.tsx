@@ -32,6 +32,11 @@ function toDateTimeLocalValue(value: string) {
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
+function formatCoordinate(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return value.toFixed(6);
+}
+
 function closedMinutesFromEvents(events: WorkerDetail['time_events']) {
   const asc = [...events].sort(
     (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
@@ -460,6 +465,28 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                               {event.note && !event.correction_note && (
                                 <div className="text-sm text-[#666666] mt-1 break-words">{event.note}</div>
                               )}
+                              <div className="text-sm text-[#666666] mt-1 break-words">
+                                {TEXTS.workerDetail.location.label}{' '}
+                                {formatCoordinate(event.latitude) && formatCoordinate(event.longitude) ? (
+                                  <>
+                                    {formatCoordinate(event.latitude)}, {formatCoordinate(event.longitude)}
+                                    {typeof event.gps_accuracy_m === 'number' && Number.isFinite(event.gps_accuracy_m) && (
+                                      <> | {TEXTS.workerDetail.location.accuracy} {Math.round(event.gps_accuracy_m)} m</>
+                                    )}
+                                    {' '}
+                                    <a
+                                      href={`https://www.google.com/maps?q=${event.latitude},${event.longitude}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[#00C9CE] hover:underline"
+                                    >
+                                      {TEXTS.workerDetail.location.openMap}
+                                    </a>
+                                  </>
+                                ) : (
+                                  TEXTS.workerDetail.location.noData
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               <div className="text-sm text-[#666666]">

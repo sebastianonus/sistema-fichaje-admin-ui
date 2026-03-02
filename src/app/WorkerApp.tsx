@@ -28,7 +28,16 @@ interface WorkerEvent {
   related_event_id?: string | null;
   corrected_event_type?: string | null;
   corrected_happened_at?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  gps_accuracy_m?: number | null;
 }
+
+type ClockLocation = {
+  latitude: number;
+  longitude: number;
+  gps_accuracy_m: number | null;
+};
 
 function isTodayLocal(value: string) {
   const d = new Date(value);
@@ -71,6 +80,27 @@ function closedMinutesFromEvents(dayEvents: WorkerEvent[]) {
     }
   }
   return total;
+}
+
+async function getCurrentLocation(): Promise<ClockLocation | null> {
+  if (!("geolocation" in navigator)) return null;
+
+  return await new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          gps_accuracy_m: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
+        }),
+      () => resolve(null),
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 30000,
+      },
+    );
+  });
 }
 
 export default function WorkerApp() {
@@ -293,7 +323,8 @@ export default function WorkerApp() {
     try {
       setActionLoading(true);
       setError(null);
-      await sendClockEvent(eventType);
+      const location = await getCurrentLocation();
+      await sendClockEvent(eventType, undefined, location ?? undefined);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.errors.clockError);

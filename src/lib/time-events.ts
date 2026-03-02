@@ -6,6 +6,9 @@ export type RawTimeEvent = {
   related_event_id?: string | null;
   corrected_event_type?: string | null;
   corrected_happened_at?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  gps_accuracy_m?: number | null;
 };
 
 export type EffectiveTimeEvent = RawTimeEvent & {
