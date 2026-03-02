@@ -21,6 +21,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [filterClockedIn, setFilterClockedIn] = useState(false);
+  const [filterOpenIncidents, setFilterOpenIncidents] = useState(false);
 
   const [workers, setWorkers] = useState<WorkerSummary[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -29,10 +30,21 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const hasFilters = filterActive !== 'all' || filterName || filterEmail || filterDateFrom || filterDateTo || filterClockedIn;
-  const isEmpty = workers.length === 0;
+  const hasFilters =
+    filterActive !== 'all' ||
+    filterName ||
+    filterEmail ||
+    filterDateFrom ||
+    filterDateTo ||
+    filterClockedIn ||
+    filterOpenIncidents;
 
   const search = useMemo(() => `${filterName} ${filterEmail}`.trim(), [filterName, filterEmail]);
+  const visibleWorkers = useMemo(
+    () => (filterOpenIncidents ? workers.filter((worker) => !!worker.open_incident) : workers),
+    [filterOpenIncidents, workers],
+  );
+  const isEmpty = visibleWorkers.length === 0;
 
   const fetchWorkers = async () => {
     try {
@@ -60,9 +72,9 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
 
   useEffect(() => {
     // keep selection only for visible workers
-    const visible = new Set(workers.map((w) => w.id));
+    const visible = new Set(visibleWorkers.map((w) => w.id));
     setSelectedIds((prev) => prev.filter((id) => visible.has(id)));
-  }, [workers]);
+  }, [visibleWorkers]);
 
   useEffect(() => {
     if (!preset) return;
@@ -86,15 +98,16 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
     setFilterDateFrom('');
     setFilterDateTo('');
     setFilterClockedIn(false);
+    setFilterOpenIncidents(false);
   };
 
-  const allVisibleSelected = workers.length > 0 && selectedIds.length === workers.length;
+  const allVisibleSelected = visibleWorkers.length > 0 && selectedIds.length === visibleWorkers.length;
 
   const toggleSelectAll = () => {
     if (allVisibleSelected) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(workers.map((w) => w.id));
+      setSelectedIds(visibleWorkers.map((w) => w.id));
     }
   };
 
@@ -265,6 +278,18 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                   <span>{TEXTS.trabajadores.filters.clockedIn}</span>
                 </label>
               </div>
+
+              <div className="flex items-center pt-8">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filterOpenIncidents}
+                    onChange={(e) => setFilterOpenIncidents(e.target.checked)}
+                    className="w-4 h-4 text-[#00C9CE] border-[#e5e5e5] rounded focus:ring-[#00C9CE]"
+                  />
+                  <span>{TEXTS.trabajadores.filters.openIncidentsOnly}</span>
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -342,7 +367,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e5e5e5]">
-                  {workers.map((worker) => (
+                  {visibleWorkers.map((worker) => (
                     <tr
                       key={worker.id}
                       onClick={() => openWorker(worker.id)}

@@ -140,6 +140,7 @@ export const TEXTS = {
       createdFrom: 'Creado desde',
       createdTo: 'Creado hasta',
       clockedIn: 'Tiene fichaje abierto ahora',
+      openIncidentsOnly: 'Solo con incidencias abiertas',
       placeholders: {
         searchName: 'Buscar por nombre',
         searchEmail: 'Buscar por email',
