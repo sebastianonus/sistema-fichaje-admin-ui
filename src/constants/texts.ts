@@ -190,6 +190,7 @@ export const TEXTS = {
     },
     info: {
       onboardingSummary: 'Mensajes preparados: {ready}. Sin telefono: {noPhone}. Fallidos: {failed}.',
+      manualLinksTitle: 'Abre manualmente estos chats de WhatsApp para completar el envio:',
     },
     incidents: {
       longOpenShift: 'Jornada abierta demasiado tiempo',
@@ -197,6 +198,7 @@ export const TEXTS = {
     },
     errors: {
       selectAtLeastOne: 'Selecciona al menos un trabajador para enviar credenciales.',
+      popupBlocked: 'El navegador bloqueo algunas ventanas emergentes. Usa los enlaces manuales para abrir los chats.',
       generic: 'Error inesperado',
     },
   },

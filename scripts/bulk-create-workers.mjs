@@ -76,8 +76,20 @@ function normalizeEmail(email) {
 function normalizePhone(phone) {
   const raw = String(phone || "").trim();
   if (!raw) return null;
-  const cleaned = raw.replace(/[^\d+]/g, "");
-  return cleaned || null;
+
+  let normalized = raw.replace(/[^\d+]/g, "");
+  if (!normalized) return null;
+
+  if (normalized.startsWith("+")) {
+    normalized = `+${normalized.slice(1).replace(/\D/g, "")}`;
+  } else {
+    normalized = normalized.replace(/\D/g, "");
+  }
+
+  if (normalized.startsWith("00")) normalized = `+${normalized.slice(2)}`;
+  if (!normalized || normalized === "+") return null;
+  if (normalized.startsWith("+") && normalized.slice(1).length === 9) return normalized.slice(1);
+  return normalized;
 }
 
 function csvEscape(value) {
@@ -329,4 +341,3 @@ main().catch((err) => {
   console.error("ERROR:", err.message);
   process.exit(1);
 });
-

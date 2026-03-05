@@ -29,6 +29,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [manualWhatsappLinks, setManualWhatsappLinks] = useState<Array<{ workerId: string; fullName: string; url: string }>>([]);
 
   const hasFilters =
     filterActive !== 'all' ||
@@ -51,6 +52,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       setLoading(true);
       setError(null);
       setInfo(null);
+      setManualWhatsappLinks([]);
       const data = await getWorkers({
         search: search || undefined,
         created_from: filterDateFrom || undefined,
@@ -128,13 +130,22 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       setSendingCredentials(true);
       setError(null);
       setInfo(null);
+      setManualWhatsappLinks([]);
       const data = await sendWorkerOnboardingMessages(ids);
       const ready = data.results.filter((r) => r.status === 'READY' && r.whatsapp_url);
       const noPhone = data.results.filter((r) => r.status === 'READY_NO_PHONE').length;
       const failed = data.results.filter((r) => r.status.endsWith('FAILED')).length;
+      const blockedPopups: Array<{ workerId: string; fullName: string; url: string }> = [];
 
       for (const item of ready) {
-        window.open(item.whatsapp_url!, '_blank', 'noopener,noreferrer');
+        const popup = window.open(item.whatsapp_url!, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+          blockedPopups.push({
+            workerId: item.worker_id,
+            fullName: item.full_name,
+            url: item.whatsapp_url!,
+          });
+        }
       }
 
       const summary = TEXTS.trabajadores.info.onboardingSummary
@@ -142,6 +153,10 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         .replace('{noPhone}', String(noPhone))
         .replace('{failed}', String(failed));
       setInfo(summary);
+      if (blockedPopups.length > 0) {
+        setManualWhatsappLinks(blockedPopups);
+        setError(TEXTS.trabajadores.errors.popupBlocked);
+      }
       await fetchWorkers();
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXTS.trabajadores.errors.generic);
@@ -308,6 +323,25 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         {info && (
           <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
             <p className="text-[#0f766e]">{info}</p>
+          </div>
+        )}
+
+        {manualWhatsappLinks.length > 0 && (
+          <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+            <p className="text-[#000935] mb-3">{TEXTS.trabajadores.info.manualLinksTitle}</p>
+            <div className="flex flex-col gap-2">
+              {manualWhatsappLinks.map((item) => (
+                <a
+                  key={item.workerId}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#00C9CE] hover:underline break-all"
+                >
+                  {item.fullName}
+                </a>
+              ))}
+            </div>
           </div>
         )}
 
