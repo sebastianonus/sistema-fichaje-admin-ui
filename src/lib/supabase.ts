@@ -1,16 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 import { TEXTS } from "@/constants/texts";
 
+declare const __WORKER_BUILD_ID__: string;
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const forceWorkerMode = (import.meta.env.VITE_FORCE_WORKER_MODE as string | undefined) === "true";
+const workerBuildId = typeof __WORKER_BUILD_ID__ !== "undefined" ? __WORKER_BUILD_ID__ : "dev";
+const workerStorageKey = `onus-auth-worker-${workerBuildId}`;
 
 function getAuthStorageKey() {
   if (typeof window === "undefined") return "onus-auth-admin";
   const host = window.location.hostname.toLowerCase();
   const isWorkerDomain = host.includes("worker");
   return (forceWorkerMode || isWorkerDomain || window.location.pathname.startsWith("/worker"))
-    ? "onus-auth-worker"
+    ? workerStorageKey
     : "onus-auth-admin";
 }
 
