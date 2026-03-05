@@ -7,6 +7,12 @@ type ClockLocation = {
   longitude?: number | null;
   gps_accuracy_m?: number | null;
 };
+type WorkerTermsAcceptance = {
+  id: string;
+  version: string;
+  accepted_at: string;
+  app_version?: string | null;
+};
 
 function getFunctionsBaseUrl() {
   const custom = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL as string | undefined;
@@ -78,4 +84,50 @@ export async function sendClockEvent(event_type: ClockEventType, note?: string, 
   }
 
   return body.data;
+}
+
+export async function getWorkerTermsStatus(version: string) {
+  const token = await getSessionToken();
+  const url = `${getFunctionsBaseUrl()}/worker-terms?version=${encodeURIComponent(version)}`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const raw = await res.text();
+  const body = raw ? JSON.parse(raw) : {};
+  if (!res.ok || body?.ok === false) {
+    throw new Error(body?.details || body?.error || `HTTP_${res.status}`);
+  }
+
+  return body.data as { accepted: boolean; acceptance: WorkerTermsAcceptance | null };
+}
+
+export async function acceptWorkerTerms(version: string, appVersion?: string | null) {
+  const token = await getSessionToken();
+  const res = await fetch(`${getFunctionsBaseUrl()}/worker-terms`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      version,
+      app_version: appVersion ?? null,
+    }),
+  });
+
+  const raw = await res.text();
+  const body = raw ? JSON.parse(raw) : {};
+  if (!res.ok || body?.ok === false) {
+    throw new Error(body?.details || body?.error || `HTTP_${res.status}`);
+  }
+
+  return body.data as {
+    accepted: boolean;
+    acceptance: WorkerTermsAcceptance | null;
+    already_accepted: boolean;
+  };
 }

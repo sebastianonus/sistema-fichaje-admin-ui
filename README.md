@@ -57,3 +57,9 @@ El backend vive en el módulo hermano `sistema-fichaje` con migraciones y funcio
 ## Publicacion
 
 Checklist operativo: `GO_LIVE_TODAY.md`.
+
+## Cumplimiento legal (Espana)
+
+- Checklist legal-operativo: `compliance/CHECKLIST_GO_LIVE_LEGAL_OPERATIVO.md`
+- Protocolo interno de fichaje: `compliance/PROTOCOLO_INTERNO_FICHAJE_ONUS.md`
+- Clausula informativa RGPD: `compliance/CLAUSULA_INFORMATIVA_RGPD_FICHAJE.md`

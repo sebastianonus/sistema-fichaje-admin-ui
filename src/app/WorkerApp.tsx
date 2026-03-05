@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
 import { changeCurrentUserPassword, ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
-import { getMyTimeEvents, getWorkerProfile, sendClockEvent } from "@/lib/worker-api";
+import { acceptWorkerTerms, getMyTimeEvents, getWorkerProfile, getWorkerTermsStatus, sendClockEvent } from "@/lib/worker-api";
 import { buildEffectiveTimeEvents } from "@/lib/time-events";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import { TEXTS } from "@/constants/texts";
@@ -41,6 +41,10 @@ type ClockLocation = {
 
 const SHIFT_TARGET_MINUTES = 450;
 const SHIFT_REMINDER_BUFFER_MINUTES = 15;
+const WORKER_TERMS_VERSION = (import.meta.env.VITE_WORKER_TERMS_VERSION as string | undefined)?.trim() || "v1.1-2026-03-05";
+const WORKER_TERMS_DOC_URL = (import.meta.env.VITE_WORKER_TERMS_DOC_URL as string | undefined)?.trim() || "";
+const WORKER_PRIVACY_DOC_URL = (import.meta.env.VITE_WORKER_PRIVACY_DOC_URL as string | undefined)?.trim() || "";
+const APP_VERSION_LABEL = (import.meta.env.VITE_APP_VERSION as string | undefined)?.trim() || "worker-portal";
 
 function isTodayLocal(value: string) {
   const d = new Date(value);
@@ -132,6 +136,11 @@ export default function WorkerApp() {
   const [dismissedResetModal, setDismissedResetModal] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
+  const [termsChecking, setTermsChecking] = useState(true);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsSubmitting, setTermsSubmitting] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   const effectiveEvents = useMemo(() => buildEffectiveTimeEvents(events), [events]);
   const lastEvent = effectiveEvents[0]?.event_type ?? null;
@@ -147,6 +156,7 @@ export default function WorkerApp() {
   const showPasswordResetModal = mustChangePassword && (!dismissedResetModal || isDeadlineDayOrLater);
   const canClosePasswordResetModal = mustChangePassword && !isDeadlineDayOrLater;
   const passwordChangeBlocksClock = mustChangePassword && resetDeadlineExpired;
+  const termsGateBlocked = termsChecking || !termsAccepted;
 
   const workerName = useMemo(() => profile?.full_name || t.fallbackWorkerName, [profile]);
   const groupedEvents = useMemo(() => {
@@ -241,6 +251,22 @@ export default function WorkerApp() {
     }
   };
 
+  const loadTermsStatus = async () => {
+    try {
+      setTermsChecking(true);
+      setTermsError(null);
+      const status = await getWorkerTermsStatus(WORKER_TERMS_VERSION);
+      setTermsAccepted(status.accepted);
+      setTermsChecked(status.accepted);
+    } catch (err) {
+      setTermsAccepted(false);
+      setTermsChecked(false);
+      setTermsError(err instanceof Error ? err.message : "No se pudo verificar la aceptacion de terminos.");
+    } finally {
+      setTermsChecking(false);
+    }
+  };
+
   useEffect(() => {
     async function boot() {
       if (!supabase) {
@@ -260,6 +286,7 @@ export default function WorkerApp() {
         await ensureRole("worker");
         setAuthed(true);
         await load();
+        await loadTermsStatus();
       } catch (err) {
         setAuthed(false);
         setError(err instanceof Error ? err.message : t.errors.invalidSession);
@@ -275,6 +302,7 @@ export default function WorkerApp() {
     if (!authed) return;
     const id = window.setInterval(() => {
       load();
+      loadTermsStatus();
     }, 30 * 60 * 1000);
     return () => window.clearInterval(id);
   }, [authed]);
@@ -347,10 +375,24 @@ export default function WorkerApp() {
       await signInWithRole(email.trim(), password, "worker");
       setAuthed(true);
       await load();
+      await loadTermsStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXTS.login.errors.workerLoginError);
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  const handleAcceptTerms = async () => {
+    try {
+      setTermsSubmitting(true);
+      setTermsError(null);
+      await acceptWorkerTerms(WORKER_TERMS_VERSION, APP_VERSION_LABEL);
+      setTermsAccepted(true);
+    } catch (err) {
+      setTermsError(err instanceof Error ? err.message : "No se pudo registrar la aceptacion.");
+    } finally {
+      setTermsSubmitting(false);
     }
   };
 
@@ -405,6 +447,11 @@ export default function WorkerApp() {
     setLocationWarning(null);
     setShowShiftReminder(false);
     setDismissedShiftReminderKey(null);
+    setTermsAccepted(false);
+    setTermsChecking(false);
+    setTermsSubmitting(false);
+    setTermsChecked(false);
+    setTermsError(null);
   };
 
   if (!ready) {
@@ -530,14 +577,14 @@ export default function WorkerApp() {
           <div className="flex gap-2">
             <button
               onClick={() => handleClock("CLOCK_IN")}
-              disabled={!profile?.is_active || isClockedIn || actionLoading || passwordChangeBlocksClock}
+              disabled={!profile?.is_active || isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50"
             >
               <LogIn className="w-4 h-4" /> {t.actions.clockIn}
             </button>
             <button
               onClick={() => handleClock("CLOCK_OUT")}
-              disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock}
+              disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] disabled:opacity-50"
             >
               <LogOut className="w-4 h-4" /> {t.actions.clockOut}
@@ -546,6 +593,11 @@ export default function WorkerApp() {
           {mustChangePassword && (
             <p className="text-sm text-[#856404] mt-3">
               {passwordChangeBlocksClock ? t.status.passwordChangeBlocking : t.status.passwordChangePending}
+            </p>
+          )}
+          {!termsChecking && !termsAccepted && (
+            <p className="text-sm text-[#856404] mt-3">
+              Debes aceptar las condiciones de uso y la informacion RGPD para habilitar el fichaje.
             </p>
           )}
           {error && <p className="text-sm text-[#dc2626] mt-3">{error}</p>}
@@ -592,6 +644,63 @@ export default function WorkerApp() {
           )}
         </div>
       </div>
+
+      {authed && !termsAccepted && (
+        <div className="fixed inset-0 z-[70] bg-[#000935]/70 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white border border-[#d9e3ee] rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-5 bg-[#00C9CE] text-white">
+              <h2 className="text-xl font-bold text-white">Condiciones de uso del portal de fichaje</h2>
+              <p className="text-sm text-white/90 mt-2">
+                Antes de continuar, debes aceptar las condiciones de uso y declarar que has recibido la informacion de proteccion de datos.
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-4 text-sm text-[#334155] space-y-2">
+                <p>Version de condiciones: <strong>{WORKER_TERMS_VERSION}</strong></p>
+                <p>Este acuse quedara registrado con fecha y hora para fines de auditoria interna.</p>
+                {WORKER_TERMS_DOC_URL && (
+                  <p>
+                    <a href={WORKER_TERMS_DOC_URL} target="_blank" rel="noreferrer" className="text-[#0f766e] underline">
+                      Ver protocolo interno de fichaje
+                    </a>
+                  </p>
+                )}
+                {WORKER_PRIVACY_DOC_URL && (
+                  <p>
+                    <a href={WORKER_PRIVACY_DOC_URL} target="_blank" rel="noreferrer" className="text-[#0f766e] underline">
+                      Ver clausula informativa RGPD
+                    </a>
+                  </p>
+                )}
+              </div>
+
+              <label className="flex items-start gap-3 text-sm text-[#0f172a]">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-[#94a3b8]"
+                  checked={termsChecked}
+                  onChange={(e) => setTermsChecked(e.target.checked)}
+                  disabled={termsChecking || termsSubmitting}
+                />
+                <span>
+                  He leido y acepto las condiciones de uso del sistema de fichaje y declaro haber recibido la informacion de proteccion de datos.
+                </span>
+              </label>
+
+              {termsError && <p className="text-sm text-[#dc2626]">{termsError}</p>}
+
+              <button
+                type="button"
+                onClick={handleAcceptTerms}
+                disabled={!termsChecked || termsChecking || termsSubmitting}
+                className="w-full px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+              >
+                {termsChecking ? "Verificando..." : termsSubmitting ? "Guardando aceptacion..." : "Aceptar y continuar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPasswordResetModal && (
         <div className="fixed inset-0 z-50 bg-[#000935]/65 backdrop-blur-[2px] flex items-center justify-center p-4">

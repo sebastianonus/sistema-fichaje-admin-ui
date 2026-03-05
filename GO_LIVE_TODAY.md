@@ -1,10 +1,20 @@
 # Go Live Hoy (Checklist)
 
+## 0. Cumplimiento legal/documental (bloqueante)
+- Completar y archivar:
+  - `compliance/CHECKLIST_GO_LIVE_LEGAL_OPERATIVO.md`
+  - `compliance/PROTOCOLO_INTERNO_FICHAJE_ONUS.md`
+  - `compliance/CLAUSULA_INFORMATIVA_RGPD_FICHAJE.md`
+- Confirmar comunicacion formal del protocolo y clausula RGPD a plantilla.
+- Si hay terceros con acceso a datos (hosting/soporte): contrato de encargado art. 28 RGPD firmado.
+
 ## 1. Configuracion minima de produccion
 - Definir `VITE_SUPABASE_URL` de produccion.
 - Definir `VITE_SUPABASE_ANON_KEY` de produccion.
+- Definir `VITE_WORKER_TERMS_VERSION` de produccion (ejemplo: `v1.1-2026-03-05`).
 - Mantener `VITE_ENABLE_STATIC_ADMIN_TOKEN=false` en produccion.
 - No usar `VITE_ADMIN_BEARER_TOKEN` en frontend de produccion.
+- Opcional: configurar `VITE_WORKER_TERMS_DOC_URL` y `VITE_WORKER_PRIVACY_DOC_URL` para mostrar enlaces directos en la aceptacion worker.
 
 ## 2. Seguridad y credenciales
 - Rotar password del admin creado durante desarrollo.
@@ -20,6 +30,7 @@
   - `admin-users`
   - `exports`
   - `clock`
+  - `worker-terms`
 - Confirmar migraciones aplicadas (`supabase db push`).
 - Probar RLS/politicas con un usuario worker y uno admin.
 
