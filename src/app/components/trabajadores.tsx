@@ -54,6 +54,7 @@ function buildWhatsappUrl(phone: string | null | undefined, message?: string) {
 }
 
 function buildFallbackOnboardingMessage(item: PreparedCredential) {
+  if (item.status.endsWith('FAILED')) return '';
   if (!item.temp_password) return item.message?.trim() || '';
   const deadlineHint = item.password_reset_deadline
     ? ` Debes cambiarla antes de ${new Date(item.password_reset_deadline).toLocaleString('es-ES')}.`
@@ -217,8 +218,10 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       })).map((r) => ({
         ...r,
         whatsapp_url:
-          ensureWhatsappUrlWithMessage(r.whatsapp_url, r.message || '') ||
-          buildWhatsappUrl(r.phone_number, r.message),
+          (r.status === 'READY' || r.status === 'READY_NO_PHONE')
+            ? (ensureWhatsappUrlWithMessage(r.whatsapp_url, r.message || '') ||
+              buildWhatsappUrl(r.phone_number, r.message))
+            : null,
       }));
       setPreparedResults(enhancedResults);
 
@@ -448,7 +451,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                         {TEXTS.trabajadores.actions.copyMessage}
                       </button>
                     )}
-                    {item.whatsapp_url ? (
+                    {item.status === 'READY' && item.whatsapp_url ? (
                       <a
                         href={item.whatsapp_url}
                         target="_blank"
@@ -457,6 +460,8 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                       >
                         {TEXTS.trabajadores.actions.openWhatsapp}
                       </a>
+                    ) : item.status === 'READY' && !item.whatsapp_url ? (
+                      <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.whatsappUrlMissing}</span>
                     ) : item.status === 'READY_NO_PHONE' ? (
                       <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.noPhoneForWhatsapp}</span>
                     ) : item.status.endsWith('FAILED') ? (
