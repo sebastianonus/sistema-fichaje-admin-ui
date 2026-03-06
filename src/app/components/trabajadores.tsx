@@ -126,6 +126,12 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       return;
     }
 
+    // Pre-open popup windows in direct user gesture to reduce browser blocking.
+    const preOpenedWindows = new Map<string, Window | null>();
+    for (const id of ids) {
+      preOpenedWindows.set(id, window.open('', '_blank', 'noopener,noreferrer'));
+    }
+
     try {
       setSendingCredentials(true);
       setError(null);
@@ -138,6 +144,12 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       const blockedPopups: Array<{ workerId: string; fullName: string; url: string }> = [];
 
       for (const item of ready) {
+        const preOpened = preOpenedWindows.get(item.worker_id) ?? null;
+        if (preOpened && !preOpened.closed) {
+          preOpened.location.href = item.whatsapp_url!;
+          continue;
+        }
+
         const popup = window.open(item.whatsapp_url!, '_blank', 'noopener,noreferrer');
         if (!popup) {
           blockedPopups.push({
@@ -157,8 +169,19 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         setManualWhatsappLinks(blockedPopups);
         setError(TEXTS.trabajadores.errors.popupBlocked);
       }
+
+      // Close unused pre-opened windows (no phone, failed, etc.).
+      const readyIds = new Set(ready.map((r) => r.worker_id));
+      for (const [id, popup] of preOpenedWindows.entries()) {
+        if (readyIds.has(id)) continue;
+        if (popup && !popup.closed) popup.close();
+      }
+
       await fetchWorkers();
     } catch (err) {
+      for (const popup of preOpenedWindows.values()) {
+        if (popup && !popup.closed) popup.close();
+      }
       setError(err instanceof Error ? err.message : TEXTS.trabajadores.errors.generic);
     } finally {
       setSendingCredentials(false);
