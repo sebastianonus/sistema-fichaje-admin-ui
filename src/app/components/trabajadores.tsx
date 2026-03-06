@@ -14,6 +14,7 @@ interface TrabajadoresProps {
 type PreparedCredential = {
   worker_id: string;
   full_name: string;
+  email?: string | null;
   phone_number: string | null;
   status: 'READY' | 'READY_NO_PHONE' | 'PASSWORD_UPDATE_FAILED' | 'PROFILE_UPDATE_FAILED';
   temp_password?: string;
@@ -56,16 +57,20 @@ function buildWhatsappUrl(phone: string | null | undefined, message?: string) {
 function buildFallbackOnboardingMessage(item: PreparedCredential) {
   if (item.status.endsWith('FAILED')) return '';
   if (!item.temp_password) return item.message?.trim() || '';
+  const workerPortalLink = buildWorkerPortalPrefillUrl(item.email, item.temp_password);
   const deadlineHint = item.password_reset_deadline
     ? ` Debes cambiarla antes de ${new Date(item.password_reset_deadline).toLocaleString('es-ES')}.`
     : ' Debes cambiarla en tu primer acceso y dentro de un plazo de 7 dias.';
-  return [
+  const parts = [
     `Hola ${item.full_name},`,
     'tu acceso de ONUS Fichaje ha sido creado/actualizado.',
+    item.email ? `Usuario: ${item.email}` : '',
     `Contrasena inicial: ${item.temp_password}`,
     deadlineHint.trim(),
     'Si necesitas ayuda, contacta con administracion.',
-  ].join(' ');
+    workerPortalLink ? `Acceso directo: ${workerPortalLink}` : '',
+  ].filter(Boolean);
+  return parts.join(' ');
 }
 
 function ensureWhatsappUrlWithMessage(url: string | null | undefined, message: string) {
@@ -76,6 +81,25 @@ function ensureWhatsappUrlWithMessage(url: string | null | undefined, message: s
       parsed.searchParams.set('text', message);
     }
     return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function buildWorkerPortalPrefillUrl(email: string | null | undefined, password: string | null | undefined) {
+  const user = (email || '').trim();
+  const pass = (password || '').trim();
+  if (!user || !pass) return null;
+
+  const explicitBase = (import.meta.env.VITE_WORKER_PORTAL_URL as string | undefined)?.trim();
+  const fallbackBase = `${window.location.origin}/worker`;
+  const base = explicitBase || fallbackBase;
+
+  try {
+    const url = new URL(base);
+    url.searchParams.set('email', user);
+    url.searchParams.set('password', pass);
+    return url.toString();
   } catch {
     return null;
   }

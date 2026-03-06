@@ -165,6 +165,7 @@ export async function sendWorkerOnboardingMessages(workerIds: string[]) {
     results: Array<{
       worker_id: string;
       full_name: string;
+      email?: string | null;
       phone_number: string | null;
       status: "READY" | "READY_NO_PHONE" | "PASSWORD_UPDATE_FAILED" | "PROFILE_UPDATE_FAILED";
       temp_password?: string;

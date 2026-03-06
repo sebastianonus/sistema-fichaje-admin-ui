@@ -168,6 +168,17 @@ export default function WorkerApp() {
   const passwordChangeBlocksClock = mustChangePassword && resetDeadlineExpired;
   const termsGateBlocked = termsChecking || !termsAccepted;
 
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    const prefillEmail = qs.get("email")?.trim() || "";
+    const prefillPassword = qs.get("password") || "";
+    if (prefillEmail) setEmail(prefillEmail);
+    if (prefillPassword) setPassword(prefillPassword);
+    if (prefillEmail || prefillPassword) {
+      window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash}`);
+    }
+  }, []);
+
   const workerName = useMemo(() => profile?.full_name || t.fallbackWorkerName, [profile]);
   const groupedEvents = useMemo(() => {
     const grouped = new Map<string, WorkerEvent[]>();
