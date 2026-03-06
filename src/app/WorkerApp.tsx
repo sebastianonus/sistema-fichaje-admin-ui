@@ -45,6 +45,16 @@ const WORKER_TERMS_VERSION = (import.meta.env.VITE_WORKER_TERMS_VERSION as strin
 const WORKER_TERMS_DOC_URL = (import.meta.env.VITE_WORKER_TERMS_DOC_URL as string | undefined)?.trim() || "";
 const WORKER_PRIVACY_DOC_URL = (import.meta.env.VITE_WORKER_PRIVACY_DOC_URL as string | undefined)?.trim() || "";
 const APP_VERSION_LABEL = (import.meta.env.VITE_APP_VERSION as string | undefined)?.trim() || "worker-portal";
+const WORKER_TERMS_READING_TEXT = [
+  "1. Uso del sistema: El portal de fichaje solo puede utilizarse para registrar de forma veraz tu hora de entrada y salida durante tu jornada laboral.",
+  "2. Cuenta personal: Tus credenciales son personales e intransferibles. No compartas tu email ni tu contrasena con terceros.",
+  "3. Veracidad del fichaje: Debes fichar en el momento real de inicio y fin de trabajo. Queda prohibido fichar por otra persona o manipular registros.",
+  "4. Geolocalizacion: El sistema puede registrar ubicacion y precision GPS unicamente para verificar la trazabilidad del fichaje.",
+  "5. Correcciones e incidencias: Si detectas un error, debes comunicarlo a administracion para su revision y, si procede, correccion auditada.",
+  "6. Proteccion de datos: Los datos de fichaje se tratan para control horario, cumplimiento normativo y gestion laboral interna.",
+  "7. Conservacion y acceso: La empresa conserva los registros segun la normativa aplicable. Puedes ejercer tus derechos de proteccion de datos por los canales internos.",
+  "8. Aceptacion: Al marcar la casilla y continuar, declaras que has leido y comprendido estas condiciones y la informacion de proteccion de datos.",
+].join("\n\n");
 
 function isTodayLocal(value: string) {
   const d = new Date(value);
@@ -672,6 +682,13 @@ export default function WorkerApp() {
                     </a>
                   </p>
                 )}
+              </div>
+
+              <div className="rounded-lg border border-[#e2e8f0] bg-white p-4">
+                <p className="text-sm font-semibold text-[#0f172a] mb-2">Texto de lectura obligatoria</p>
+                <div className="max-h-40 overflow-y-auto whitespace-pre-line text-sm text-[#334155] pr-1">
+                  {WORKER_TERMS_READING_TEXT}
+                </div>
               </div>
 
               <label className="flex items-start gap-3 text-sm text-[#0f172a]">
