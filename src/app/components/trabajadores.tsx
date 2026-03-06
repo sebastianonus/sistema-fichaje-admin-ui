@@ -127,9 +127,21 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
     }
 
     // Pre-open popup windows in direct user gesture to reduce browser blocking.
+    // Do not use noopener/noreferrer here; some browsers won't allow later redirect/close.
     const preOpenedWindows = new Map<string, Window | null>();
     for (const id of ids) {
-      preOpenedWindows.set(id, window.open('', '_blank', 'noopener,noreferrer'));
+      const popup = window.open('about:blank', '_blank');
+      if (popup) {
+        try {
+          popup.document.title = TEXTS.trabajadores.info.openingChatTitle;
+          popup.document.body.style.fontFamily = 'system-ui, sans-serif';
+          popup.document.body.style.padding = '16px';
+          popup.document.body.textContent = TEXTS.trabajadores.info.openingChatBody;
+        } catch {
+          // Ignore if browser blocks document access for this window.
+        }
+      }
+      preOpenedWindows.set(id, popup);
     }
 
     try {
@@ -150,7 +162,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
           continue;
         }
 
-        const popup = window.open(item.whatsapp_url!, '_blank', 'noopener,noreferrer');
+        const popup = window.open(item.whatsapp_url!, '_blank');
         if (!popup) {
           blockedPopups.push({
             workerId: item.worker_id,
@@ -174,13 +186,25 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       const readyIds = new Set(ready.map((r) => r.worker_id));
       for (const [id, popup] of preOpenedWindows.entries()) {
         if (readyIds.has(id)) continue;
-        if (popup && !popup.closed) popup.close();
+        if (popup && !popup.closed) {
+          try {
+            popup.close();
+          } catch {
+            // noop
+          }
+        }
       }
 
       await fetchWorkers();
     } catch (err) {
       for (const popup of preOpenedWindows.values()) {
-        if (popup && !popup.closed) popup.close();
+        if (popup && !popup.closed) {
+          try {
+            popup.close();
+          } catch {
+            // noop
+          }
+        }
       }
       setError(err instanceof Error ? err.message : TEXTS.trabajadores.errors.generic);
     } finally {

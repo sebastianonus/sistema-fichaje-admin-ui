@@ -191,6 +191,8 @@ export const TEXTS = {
     info: {
       onboardingSummary: 'Mensajes preparados: {ready}. Sin telefono: {noPhone}. Fallidos: {failed}.',
       manualLinksTitle: 'Abre manualmente estos chats de WhatsApp para completar el envio:',
+      openingChatTitle: 'Abriendo chat de WhatsApp...',
+      openingChatBody: 'Preparando el chat de WhatsApp con credenciales...',
     },
     incidents: {
       longOpenShift: 'Jornada abierta demasiado tiempo',

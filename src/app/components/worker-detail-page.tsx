@@ -37,6 +37,14 @@ function formatCoordinate(value?: number | null) {
   return value.toFixed(6);
 }
 
+function formatEventTime(value: string) {
+  return new Date(value).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
 function closedMinutesFromEvents(events: WorkerDetail['time_events']) {
   const asc = [...events].sort(
     (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
@@ -553,7 +561,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                               {event.corrected && (
                                 <div className="text-sm text-[#666666] mt-1 break-words">
                                   {TEXTS.workerDetail.correction.originalLabel}{' '}
-                                  {event.original_event_type} {new Date(event.original_happened_at ?? event.happened_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                  {event.original_event_type} {formatEventTime(event.original_happened_at ?? event.happened_at)}
                                 </div>
                               )}
                               {event.correction_note && (
@@ -580,7 +588,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               <div className="text-sm text-[#666666]">
-                                {new Date(event.happened_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                {formatEventTime(event.happened_at)}
                               </div>
                               {formatCoordinate(event.latitude) && formatCoordinate(event.longitude) && (
                                 <a
