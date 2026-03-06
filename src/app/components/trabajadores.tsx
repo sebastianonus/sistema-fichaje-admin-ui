@@ -25,8 +25,13 @@ function normalizePhoneForWhatsapp(raw: string | null | undefined) {
   normalized = normalized.replace(/\D/g, '');
   if (!normalized) return null;
   if (normalized.length === 9) return `34${normalized}`;
-  if (normalized.startsWith('00')) return normalized.slice(2);
-  return normalized;
+  if (normalized.startsWith('00')) normalized = normalized.slice(2);
+  if (normalized.length >= 8 && normalized.length <= 15) return normalized;
+  if (normalized.startsWith('0')) {
+    const trimmed = normalized.replace(/^0+/, '');
+    if (trimmed.length >= 8 && trimmed.length <= 15) return trimmed;
+  }
+  return null;
 }
 
 function buildWhatsappUrl(phone: string | null | undefined, message?: string) {

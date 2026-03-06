@@ -89,6 +89,7 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
               className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
               required
             />
+            <p className="mt-1 text-xs text-[#666666]">{TEXTS.createWorker.fields.phoneFormatHelp}</p>
           </div>
 
           <div>

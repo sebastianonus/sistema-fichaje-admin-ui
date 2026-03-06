@@ -317,6 +317,7 @@ export const TEXTS = {
       cancel: 'Cancelar',
       edit: 'Editar',
       placeholder: '+34 600000000',
+      formatHelp: 'Formato recomendado: +34 612345678 o 612345678',
     },
     email: {
       save: 'Guardar',
@@ -404,6 +405,7 @@ export const TEXTS = {
       fullName: 'Nombre completo',
       email: 'Email',
       phone: 'Telefono',
+      phoneFormatHelp: 'Formato recomendado: +34 612345678 o 612345678',
       password: 'Contrasena inicial',
       placeholders: {
         fullName: 'Introduce el nombre completo',
