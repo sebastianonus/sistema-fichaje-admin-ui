@@ -11,6 +11,18 @@ interface TrabajadoresProps {
   onOpenWorkerDetail?: (workerId: string) => void;
 }
 
+type PreparedCredential = {
+  worker_id: string;
+  full_name: string;
+  phone_number: string | null;
+  status: 'READY' | 'READY_NO_PHONE' | 'PASSWORD_UPDATE_FAILED' | 'PROFILE_UPDATE_FAILED';
+  temp_password?: string;
+  password_reset_deadline?: string;
+  message?: string;
+  whatsapp_url?: string | null;
+  error?: string;
+};
+
 function normalizePhoneForWhatsapp(raw: string | null | undefined) {
   const value = String(raw || '').trim();
   if (!value) return null;
@@ -41,6 +53,31 @@ function buildWhatsappUrl(phone: string | null | undefined, message?: string) {
   return `https://wa.me/${waNumber}?text=${text}`;
 }
 
+function buildFallbackOnboardingMessage(item: PreparedCredential) {
+  if (item.message?.trim()) return item.message;
+  if (!item.temp_password) return '';
+  return [
+    `Hola ${item.full_name},`,
+    'tu acceso de ONUS Fichaje ha sido creado/actualizado.',
+    `Contrasena inicial: ${item.temp_password}`,
+    'Debes cambiarla en tu primer acceso y dentro de un plazo de 7 dias.',
+    'Si necesitas ayuda, contacta con administracion.',
+  ].join(' ');
+}
+
+function ensureWhatsappUrlWithMessage(url: string | null | undefined, message: string) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (!parsed.searchParams.get('text') && message.trim()) {
+      parsed.searchParams.set('text', message);
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -59,17 +96,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [preparedResults, setPreparedResults] = useState<Array<{
-    worker_id: string;
-    full_name: string;
-    phone_number: string | null;
-    status: 'READY' | 'READY_NO_PHONE' | 'PASSWORD_UPDATE_FAILED' | 'PROFILE_UPDATE_FAILED';
-    temp_password?: string;
-    password_reset_deadline?: string;
-    message?: string;
-    whatsapp_url?: string | null;
-    error?: string;
-  }>>([]);
+  const [preparedResults, setPreparedResults] = useState<PreparedCredential[]>([]);
 
   const hasFilters =
     filterActive !== 'all' ||
@@ -181,11 +208,14 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       setInfo(null);
       setPreparedResults([]);
       const data = await sendWorkerOnboardingMessages(ids);
-      setPreparedResults(data.results);
-
       const enhancedResults = data.results.map((r) => ({
         ...r,
-        whatsapp_url: r.whatsapp_url || buildWhatsappUrl(r.phone_number, r.message),
+        message: buildFallbackOnboardingMessage(r),
+      })).map((r) => ({
+        ...r,
+        whatsapp_url:
+          ensureWhatsappUrlWithMessage(r.whatsapp_url, r.message || '') ||
+          buildWhatsappUrl(r.phone_number, r.message),
       }));
       setPreparedResults(enhancedResults);
 
