@@ -192,75 +192,69 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
       ) : filteredItems.length === 0 ? (
         <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 text-[#666666]">{TEXTS.incidencias.empty}</div>
       ) : (
-        <div className="bg-white border border-[#e5e5e5] rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#f9f9f9] border-b border-[#e5e5e5]">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.incidencias.table.columns.trabajador}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.incidencias.table.columns.incidencia}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.incidencias.table.columns.estado}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.incidencias.table.columns.evento}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.incidencias.table.columns.detectada}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.incidencias.table.columns.correccion}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.incidencias.table.columns.acciones}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e5e5e5]">
-                {filteredItems.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="font-medium text-[#000935]">{item.worker_name}</div>
-                      <div className="text-[#666666]">{item.worker_email}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#000935]">{item.incident_type}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs ${item.status === "OPEN" ? "bg-[#fef2f2] text-[#dc2626]" : "bg-[#ecfeff] text-[#0f766e]"}`}>
-                        {item.status === "OPEN"
-                          ? TEXTS.incidencias.table.states.open
-                          : item.status === "RESOLVED"
-                            ? TEXTS.incidencias.table.states.resolved
-                            : TEXTS.incidencias.table.states.dismissed}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#666666]">
-                      {item.related_event ? (
-                        <div>
-                          <div>{item.related_event.event_type}</div>
-                          <div>{new Date(item.related_event.happened_at).toLocaleString("es-ES")}</div>
-                        </div>
-                      ) : "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#666666]">{new Date(item.detected_at).toLocaleString("es-ES")}</td>
-                    <td className="px-4 py-3 text-sm text-[#666666]">
-                      {item.has_correction ? TEXTS.incidencias.table.correction.yes : TEXTS.incidencias.table.correction.no}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onOpenWorkerDetail(item.worker_id)}
-                          className="text-[#000935] hover:underline"
-                        >
-                          {TEXTS.incidencias.actions.openWorker}
-                        </button>
-                        {item.can_correct && item.related_event && (
-                          <>
-                            <span className="text-[#e5e5e5]">|</span>
-                            <button
-                              onClick={() => openCorrection(item)}
-                              className="text-[#00C9CE] hover:underline"
-                            >
-                              {TEXTS.incidencias.actions.correctNow}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-3">
+          {filteredItems.map((item) => (
+            <div key={item.id} className="bg-white border border-[#e5e5e5] rounded-lg p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-[#000935]">{item.worker_name}</div>
+                  <div className="text-sm text-[#666666]">{item.worker_email}{item.worker_phone_number ? ` | ${item.worker_phone_number}` : ''}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex px-2 py-1 rounded-full text-xs ${item.status === "OPEN" ? "bg-[#fef2f2] text-[#dc2626]" : "bg-[#ecfeff] text-[#0f766e]"}`}>
+                    {item.status === "OPEN"
+                      ? TEXTS.incidencias.table.states.open
+                      : item.status === "RESOLVED"
+                        ? TEXTS.incidencias.table.states.resolved
+                        : TEXTS.incidencias.table.states.dismissed}
+                  </span>
+                  <span className={`inline-flex px-2 py-1 rounded-full text-xs ${item.has_correction ? "bg-[#ecfeff] text-[#0f766e]" : "bg-[#f5f5f5] text-[#666666]"}`}>
+                    {item.has_correction ? TEXTS.incidencias.table.correction.yes : TEXTS.incidencias.table.correction.no}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 text-sm">
+                <div>
+                  <div className="text-[#666666]">{TEXTS.incidencias.table.columns.incidencia}</div>
+                  <div className="text-[#000935]">{item.incident_type}</div>
+                </div>
+                <div>
+                  <div className="text-[#666666]">{TEXTS.incidencias.table.columns.detectada}</div>
+                  <div className="text-[#000935]">{new Date(item.detected_at).toLocaleString("es-ES")}</div>
+                </div>
+                <div>
+                  <div className="text-[#666666]">{TEXTS.incidencias.table.columns.evento}</div>
+                  <div className="text-[#000935]">
+                    {item.related_event
+                      ? `${item.related_event.event_type} - ${new Date(item.related_event.happened_at).toLocaleString("es-ES")}`
+                      : "-"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[#666666]">{TEXTS.workerDetail.correction.reasonLabel}</div>
+                  <div className="text-[#000935]">{item.note || "-"}</div>
+                </div>
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-[#e5e5e5] flex items-center gap-3 text-sm">
+                <button
+                  onClick={() => onOpenWorkerDetail(item.worker_id)}
+                  className="text-[#000935] hover:underline"
+                >
+                  {TEXTS.incidencias.actions.openWorker}
+                </button>
+                {item.can_correct && item.related_event && (
+                  <button
+                    onClick={() => openCorrection(item)}
+                    className="text-[#00C9CE] hover:underline"
+                  >
+                    {TEXTS.incidencias.actions.correctNow}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -322,4 +316,3 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
     </div>
   );
 }
-

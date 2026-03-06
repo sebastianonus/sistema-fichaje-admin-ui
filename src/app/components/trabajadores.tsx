@@ -29,7 +29,17 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [manualWhatsappLinks, setManualWhatsappLinks] = useState<Array<{ workerId: string; fullName: string; url: string }>>([]);
+  const [preparedResults, setPreparedResults] = useState<Array<{
+    worker_id: string;
+    full_name: string;
+    phone_number: string | null;
+    status: 'READY' | 'READY_NO_PHONE' | 'PASSWORD_UPDATE_FAILED' | 'PROFILE_UPDATE_FAILED';
+    temp_password?: string;
+    password_reset_deadline?: string;
+    message?: string;
+    whatsapp_url?: string | null;
+    error?: string;
+  }>>([]);
 
   const hasFilters =
     filterActive !== 'all' ||
@@ -52,7 +62,6 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       setLoading(true);
       setError(null);
       setInfo(null);
-      setManualWhatsappLinks([]);
       const data = await getWorkers({
         search: search || undefined,
         created_from: filterDateFrom || undefined,
@@ -119,7 +128,17 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
     );
   };
 
-  const handleSendCredentials = async (workerIds?: string[]) => {
+  const copyToClipboard = async (text: string) => {
+    if (!text.trim()) return false;
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleViewCredentials = async (workerIds?: string[]) => {
     const ids = workerIds && workerIds.length ? workerIds : selectedIds;
     if (!ids.length) {
       setError(TEXTS.trabajadores.errors.selectAtLeastOne);
@@ -130,33 +149,22 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       setSendingCredentials(true);
       setError(null);
       setInfo(null);
-      setManualWhatsappLinks([]);
+      setPreparedResults([]);
       const data = await sendWorkerOnboardingMessages(ids);
+      setPreparedResults(data.results);
+
       const ready = data.results.filter((r) => r.status === 'READY' && r.whatsapp_url);
       const noPhone = data.results.filter((r) => r.status === 'READY_NO_PHONE').length;
       const failed = data.results.filter((r) => r.status.endsWith('FAILED')).length;
-      const blockedPopups: Array<{ workerId: string; fullName: string; url: string }> = [];
 
-      // Reliable behavior for one worker: open tab, and if blocked fallback to same tab.
-      if (ready.length === 1) {
-        const only = ready[0];
-        const popup = window.open(only.whatsapp_url!, '_blank');
-        if (!popup) {
-          window.location.href = only.whatsapp_url!;
-          return;
+      const firstReadyWithMessage = data.results.find((r) => (r.status === 'READY' || r.status === 'READY_NO_PHONE') && r.message);
+      if (firstReadyWithMessage?.message) {
+        const copied = await copyToClipboard(firstReadyWithMessage.message);
+        if (copied) {
+          setInfo(TEXTS.trabajadores.info.credentialsPreparedAndCopied);
         }
       } else {
-        // Bulk mode: best effort auto-open + manual fallback links for blocked tabs.
-        for (const item of ready) {
-          const popup = window.open(item.whatsapp_url!, '_blank');
-          if (!popup) {
-            blockedPopups.push({
-              workerId: item.worker_id,
-              fullName: item.full_name,
-              url: item.whatsapp_url!,
-            });
-          }
-        }
+        setInfo(null);
       }
 
       const summary = TEXTS.trabajadores.info.onboardingSummary
@@ -164,9 +172,10 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         .replace('{noPhone}', String(noPhone))
         .replace('{failed}', String(failed));
       setInfo(summary);
-      if (blockedPopups.length > 0) {
-        setManualWhatsappLinks(blockedPopups);
-        setError(TEXTS.trabajadores.errors.popupBlocked);
+
+      if (ready.length === 0) {
+        if (noPhone > 0) setError(TEXTS.trabajadores.errors.noPhoneForWhatsapp);
+        else if (failed > 0) setError(TEXTS.trabajadores.errors.credentialsPrepareFailed);
       }
 
       await fetchWorkers();
@@ -187,11 +196,11 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => handleSendCredentials()}
+              onClick={() => handleViewCredentials()}
               disabled={sendingCredentials || selectedIds.length === 0}
               className="flex items-center gap-2 px-4 py-2.5 bg-[#000935] text-white rounded-lg hover:bg-[#0a1850] transition-colors disabled:opacity-50"
             >
-              {TEXTS.trabajadores.actions.sendCredentials}
+              {TEXTS.trabajadores.actions.viewCredentials}
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -338,20 +347,60 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
           </div>
         )}
 
-        {manualWhatsappLinks.length > 0 && (
+        {preparedResults.length > 0 && (
           <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
-            <p className="text-[#000935] mb-3">{TEXTS.trabajadores.info.manualLinksTitle}</p>
+            <p className="text-[#000935] mb-3">{TEXTS.trabajadores.info.preparedCredentialsTitle}</p>
             <div className="flex flex-col gap-2">
-              {manualWhatsappLinks.map((item) => (
-                <a
-                  key={item.workerId}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#00C9CE] hover:underline break-all"
-                >
-                  {item.fullName}
-                </a>
+              {preparedResults.map((item) => (
+                <div key={item.worker_id} className="border border-[#e5e5e5] rounded-lg p-3">
+                  <div className="font-medium text-[#000935]">{item.full_name}</div>
+                  <div className="text-sm text-[#666666] mt-1">
+                    {TEXTS.trabajadores.table.columns.telefono}: {item.phone_number || TEXTS.common.noData}
+                  </div>
+                  <div className="text-sm text-[#666666]">
+                    {TEXTS.workerPassword.fields.newPassword}: {item.temp_password || TEXTS.common.noData}
+                  </div>
+                  {item.password_reset_deadline && (
+                    <div className="text-sm text-[#666666]">
+                      {TEXTS.workerPortal.passwordModal.messageWithDeadlinePrefix} {new Date(item.password_reset_deadline).toLocaleString('es-ES')}
+                    </div>
+                  )}
+                  {item.message && (
+                    <div className="mt-2">
+                      <textarea
+                        readOnly
+                        value={item.message}
+                        className="w-full min-h-[96px] px-3 py-2 bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg text-sm text-[#000935]"
+                      />
+                    </div>
+                  )}
+                  <div className="mt-2 flex items-center gap-3 text-sm">
+                    {item.message && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const ok = await copyToClipboard(item.message || '');
+                          if (!ok) setError(TEXTS.trabajadores.errors.clipboardFailed);
+                        }}
+                        className="text-[#000935] hover:underline"
+                      >
+                        {TEXTS.trabajadores.actions.copyMessage}
+                      </button>
+                    )}
+                    {item.whatsapp_url ? (
+                      <a
+                        href={item.whatsapp_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#00C9CE] hover:underline"
+                      >
+                        {TEXTS.trabajadores.actions.openWhatsapp}
+                      </a>
+                    ) : (
+                      <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.noPhoneForWhatsapp}</span>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -471,11 +520,11 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleSendCredentials([worker.id]);
+                              handleViewCredentials([worker.id]);
                             }}
                             className="text-[#000935] hover:underline"
                           >
-                            {TEXTS.trabajadores.actions.sendCredentials}
+                            {TEXTS.trabajadores.actions.viewCredentials}
                           </button>
                         </div>
                       </td>

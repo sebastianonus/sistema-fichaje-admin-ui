@@ -238,6 +238,9 @@ export const TEXTS = {
       filters: 'Filtros',
       createWorker: 'Crear trabajador',
       sendCredentials: 'Enviar credenciales',
+      viewCredentials: 'Ver credenciales',
+      copyMessage: 'Copiar mensaje',
+      openWhatsapp: 'Abrir WhatsApp',
       clearFilters: 'Limpiar filtros',
     },
     info: {
@@ -245,6 +248,8 @@ export const TEXTS = {
       manualLinksTitle: 'Abre manualmente estos chats de WhatsApp para completar el envio:',
       openingChatTitle: 'Abriendo chat de WhatsApp...',
       openingChatBody: 'Preparando el chat de WhatsApp con credenciales...',
+      preparedCredentialsTitle: 'Credenciales preparadas para envio',
+      credentialsPreparedAndCopied: 'Credenciales preparadas y mensaje copiado al portapapeles.',
     },
     incidents: {
       longOpenShift: 'Jornada abierta demasiado tiempo',
@@ -253,6 +258,9 @@ export const TEXTS = {
     errors: {
       selectAtLeastOne: 'Selecciona al menos un trabajador para enviar credenciales.',
       popupBlocked: 'El navegador bloqueo algunas ventanas emergentes. Usa los enlaces manuales para abrir los chats.',
+      noPhoneForWhatsapp: 'No se pudo abrir WhatsApp porque el trabajador no tiene telefono valido para envio.',
+      credentialsPrepareFailed: 'No se pudieron preparar credenciales para enviar por WhatsApp.',
+      clipboardFailed: 'No se pudo copiar al portapapeles automaticamente. Copia el mensaje manualmente.',
       generic: 'Error inesperado',
     },
   },
