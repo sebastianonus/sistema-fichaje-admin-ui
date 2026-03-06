@@ -54,13 +54,15 @@ function buildWhatsappUrl(phone: string | null | undefined, message?: string) {
 }
 
 function buildFallbackOnboardingMessage(item: PreparedCredential) {
-  if (item.message?.trim()) return item.message;
-  if (!item.temp_password) return '';
+  if (!item.temp_password) return item.message?.trim() || '';
+  const deadlineHint = item.password_reset_deadline
+    ? ` Debes cambiarla antes de ${new Date(item.password_reset_deadline).toLocaleString('es-ES')}.`
+    : ' Debes cambiarla en tu primer acceso y dentro de un plazo de 7 dias.';
   return [
     `Hola ${item.full_name},`,
     'tu acceso de ONUS Fichaje ha sido creado/actualizado.',
     `Contrasena inicial: ${item.temp_password}`,
-    'Debes cambiarla en tu primer acceso y dentro de un plazo de 7 dias.',
+    deadlineHint.trim(),
     'Si necesitas ayuda, contacta con administracion.',
   ].join(' ');
 }
@@ -210,6 +212,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       const data = await sendWorkerOnboardingMessages(ids);
       const enhancedResults = data.results.map((r) => ({
         ...r,
+        // Always generate personalized message per worker using returned credentials.
         message: buildFallbackOnboardingMessage(r),
       })).map((r) => ({
         ...r,
@@ -223,15 +226,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       const noPhone = enhancedResults.filter((r) => r.status === 'READY_NO_PHONE').length;
       const failed = enhancedResults.filter((r) => r.status.endsWith('FAILED')).length;
 
-      const firstReadyWithMessage = enhancedResults.find((r) => (r.status === 'READY' || r.status === 'READY_NO_PHONE') && r.message);
-      if (firstReadyWithMessage?.message) {
-        const copied = await copyToClipboard(firstReadyWithMessage.message);
-        if (copied) {
-          setInfo(TEXTS.trabajadores.info.credentialsPreparedAndCopied);
-        }
-      } else {
-        setInfo(null);
-      }
+      setInfo(null);
 
       const summary = TEXTS.trabajadores.info.onboardingSummary
         .replace('{ready}', String(ready.length))
