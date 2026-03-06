@@ -494,13 +494,20 @@ export default function WorkerApp() {
             <p className="text-white/90 mt-1">{t.loginSubtitle}</p>
           </div>
 
-          <form onSubmit={handleLogin} className="p-6 space-y-4">
+          <form onSubmit={handleLogin} className="p-6 space-y-4" autoComplete="off">
             <div>
               <label className="block mb-2">{TEXTS.login.fields.email}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                 <input
                   type="email"
+                  name="worker_login_email"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={TEXTS.login.placeholders.workerEmail}
@@ -516,6 +523,10 @@ export default function WorkerApp() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="worker_login_password"
+                  autoComplete="new-password"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={TEXTS.login.placeholders.passwordMask}
