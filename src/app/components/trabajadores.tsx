@@ -11,6 +11,31 @@ interface TrabajadoresProps {
   onOpenWorkerDetail?: (workerId: string) => void;
 }
 
+function normalizePhoneForWhatsapp(raw: string | null | undefined) {
+  const value = String(raw || '').trim();
+  if (!value) return null;
+  let normalized = value.replace(/[^\d+]/g, '');
+  if (!normalized) return null;
+  if (normalized.startsWith('+')) {
+    const digits = normalized.slice(1).replace(/\D/g, '');
+    if (!digits) return null;
+    if (digits.length === 9) return `34${digits}`;
+    return digits;
+  }
+  normalized = normalized.replace(/\D/g, '');
+  if (!normalized) return null;
+  if (normalized.length === 9) return `34${normalized}`;
+  if (normalized.startsWith('00')) return normalized.slice(2);
+  return normalized;
+}
+
+function buildWhatsappUrl(phone: string | null | undefined, message?: string) {
+  const waNumber = normalizePhoneForWhatsapp(phone);
+  if (!waNumber) return null;
+  const text = encodeURIComponent(message || '');
+  return `https://wa.me/${waNumber}?text=${text}`;
+}
+
 export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -153,11 +178,17 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       const data = await sendWorkerOnboardingMessages(ids);
       setPreparedResults(data.results);
 
-      const ready = data.results.filter((r) => r.status === 'READY' && r.whatsapp_url);
-      const noPhone = data.results.filter((r) => r.status === 'READY_NO_PHONE').length;
-      const failed = data.results.filter((r) => r.status.endsWith('FAILED')).length;
+      const enhancedResults = data.results.map((r) => ({
+        ...r,
+        whatsapp_url: r.whatsapp_url || buildWhatsappUrl(r.phone_number, r.message),
+      }));
+      setPreparedResults(enhancedResults);
 
-      const firstReadyWithMessage = data.results.find((r) => (r.status === 'READY' || r.status === 'READY_NO_PHONE') && r.message);
+      const ready = enhancedResults.filter((r) => r.status === 'READY' && r.whatsapp_url);
+      const noPhone = enhancedResults.filter((r) => r.status === 'READY_NO_PHONE').length;
+      const failed = enhancedResults.filter((r) => r.status.endsWith('FAILED')).length;
+
+      const firstReadyWithMessage = enhancedResults.find((r) => (r.status === 'READY' || r.status === 'READY_NO_PHONE') && r.message);
       if (firstReadyWithMessage?.message) {
         const copied = await copyToClipboard(firstReadyWithMessage.message);
         if (copied) {
@@ -396,8 +427,12 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                       >
                         {TEXTS.trabajadores.actions.openWhatsapp}
                       </a>
-                    ) : (
+                    ) : item.status === 'READY_NO_PHONE' ? (
                       <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.noPhoneForWhatsapp}</span>
+                    ) : item.status.endsWith('FAILED') ? (
+                      <span className="text-[#dc2626]">{item.error || TEXTS.trabajadores.errors.credentialsPrepareFailed}</span>
+                    ) : (
+                      <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.whatsappUrlMissing}</span>
                     )}
                   </div>
                 </div>

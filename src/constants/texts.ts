@@ -260,6 +260,7 @@ export const TEXTS = {
       popupBlocked: 'El navegador bloqueo algunas ventanas emergentes. Usa los enlaces manuales para abrir los chats.',
       noPhoneForWhatsapp: 'No se pudo abrir WhatsApp porque el trabajador no tiene telefono valido para envio.',
       credentialsPrepareFailed: 'No se pudieron preparar credenciales para enviar por WhatsApp.',
+      whatsappUrlMissing: 'No se pudo construir el enlace de WhatsApp para este trabajador.',
       clipboardFailed: 'No se pudo copiar al portapapeles automaticamente. Copia el mensaje manualmente.',
       generic: 'Error inesperado',
     },
