@@ -48,6 +48,27 @@ export interface WorkerDetail {
     detected_at: string;
     note?: string | null;
   }>;
+  incident_history?: Array<{
+    id: string;
+    user_id: string;
+    related_event_id?: string | null;
+    incident_type: string;
+    status: "OPEN" | "RESOLVED" | "DISMISSED";
+    note?: string | null;
+    detected_at: string;
+    resolved_at?: string | null;
+    resolved_by?: string | null;
+    created_at: string;
+    has_correction?: boolean;
+    correction?: {
+      id: string;
+      note?: string | null;
+      corrected_event_type?: string | null;
+      corrected_happened_at?: string | null;
+      happened_at: string;
+      created_by?: string | null;
+    } | null;
+  }>;
   time_events: Array<{
     id: string;
     event_type: string;
@@ -60,6 +81,38 @@ export interface WorkerDetail {
     longitude?: number | null;
     gps_accuracy_m?: number | null;
   }>;
+}
+
+export interface IncidentHistoryItem {
+  id: string;
+  worker_id: string;
+  worker_name: string;
+  worker_email: string;
+  worker_phone_number?: string | null;
+  incident_type: string;
+  status: "OPEN" | "RESOLVED" | "DISMISSED";
+  note?: string | null;
+  detected_at: string;
+  resolved_at?: string | null;
+  resolved_by?: string | null;
+  related_event?: {
+    id: string;
+    event_type: string;
+    happened_at: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    gps_accuracy_m?: number | null;
+  } | null;
+  has_correction: boolean;
+  correction?: {
+    id: string;
+    note?: string | null;
+    corrected_event_type?: string | null;
+    corrected_happened_at?: string | null;
+    happened_at: string;
+    created_by?: string | null;
+  } | null;
+  can_correct: boolean;
 }
 
 export interface ExportRecord {

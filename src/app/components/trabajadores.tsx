@@ -126,24 +126,6 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       return;
     }
 
-    // Pre-open popup windows in direct user gesture to reduce browser blocking.
-    // Do not use noopener/noreferrer here; some browsers won't allow later redirect/close.
-    const preOpenedWindows = new Map<string, Window | null>();
-    for (const id of ids) {
-      const popup = window.open('about:blank', '_blank');
-      if (popup) {
-        try {
-          popup.document.title = TEXTS.trabajadores.info.openingChatTitle;
-          popup.document.body.style.fontFamily = 'system-ui, sans-serif';
-          popup.document.body.style.padding = '16px';
-          popup.document.body.textContent = TEXTS.trabajadores.info.openingChatBody;
-        } catch {
-          // Ignore if browser blocks document access for this window.
-        }
-      }
-      preOpenedWindows.set(id, popup);
-    }
-
     try {
       setSendingCredentials(true);
       setError(null);
@@ -155,20 +137,25 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       const failed = data.results.filter((r) => r.status.endsWith('FAILED')).length;
       const blockedPopups: Array<{ workerId: string; fullName: string; url: string }> = [];
 
-      for (const item of ready) {
-        const preOpened = preOpenedWindows.get(item.worker_id) ?? null;
-        if (preOpened && !preOpened.closed) {
-          preOpened.location.href = item.whatsapp_url!;
-          continue;
-        }
-
-        const popup = window.open(item.whatsapp_url!, '_blank');
+      // Reliable behavior for one worker: open tab, and if blocked fallback to same tab.
+      if (ready.length === 1) {
+        const only = ready[0];
+        const popup = window.open(only.whatsapp_url!, '_blank');
         if (!popup) {
-          blockedPopups.push({
-            workerId: item.worker_id,
-            fullName: item.full_name,
-            url: item.whatsapp_url!,
-          });
+          window.location.href = only.whatsapp_url!;
+          return;
+        }
+      } else {
+        // Bulk mode: best effort auto-open + manual fallback links for blocked tabs.
+        for (const item of ready) {
+          const popup = window.open(item.whatsapp_url!, '_blank');
+          if (!popup) {
+            blockedPopups.push({
+              workerId: item.worker_id,
+              fullName: item.full_name,
+              url: item.whatsapp_url!,
+            });
+          }
         }
       }
 
@@ -182,30 +169,8 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         setError(TEXTS.trabajadores.errors.popupBlocked);
       }
 
-      // Close unused pre-opened windows (no phone, failed, etc.).
-      const readyIds = new Set(ready.map((r) => r.worker_id));
-      for (const [id, popup] of preOpenedWindows.entries()) {
-        if (readyIds.has(id)) continue;
-        if (popup && !popup.closed) {
-          try {
-            popup.close();
-          } catch {
-            // noop
-          }
-        }
-      }
-
       await fetchWorkers();
     } catch (err) {
-      for (const popup of preOpenedWindows.values()) {
-        if (popup && !popup.closed) {
-          try {
-            popup.close();
-          } catch {
-            // noop
-          }
-        }
-      }
       setError(err instanceof Error ? err.message : TEXTS.trabajadores.errors.generic);
     } finally {
       setSendingCredentials(false);

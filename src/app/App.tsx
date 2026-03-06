@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Sidebar } from '@/app/components/sidebar';
 import { Dashboard } from '@/app/components/dashboard';
 import { Trabajadores } from '@/app/components/trabajadores';
+import { Incidencias } from '@/app/components/incidencias';
 import { WorkerDetailPage } from '@/app/components/worker-detail-page';
 import { Exports } from '@/app/components/exports';
 import { Ajustes } from '@/app/components/ajustes';
@@ -9,7 +10,7 @@ import { Login } from '@/app/components/login';
 import { TEXTS } from '@/constants/texts';
 import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
 
-export type Page = 'dashboard' | 'trabajadores' | 'workerDetail' | 'exports' | 'ajustes';
+export type Page = 'dashboard' | 'trabajadores' | 'incidencias' | 'workerDetail' | 'exports' | 'ajustes';
 export type WorkersPreset = {
   isActive?: 'active' | 'inactive';
   clockedIn?: boolean;
@@ -103,6 +104,9 @@ export default function App() {
             preset={workersPreset}
             onOpenWorkerDetail={handleOpenWorkerDetail}
           />
+        )}
+        {currentPage === 'incidencias' && (
+          <Incidencias onOpenWorkerDetail={handleOpenWorkerDetail} />
         )}
         {currentPage === 'workerDetail' && selectedWorkerId && (
           <WorkerDetailPage

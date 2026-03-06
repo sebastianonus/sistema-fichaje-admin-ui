@@ -110,7 +110,7 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
           loading={loading}
           error={error}
           onRetry={fetchMetrics}
-          onClick={() => onNavigate('trabajadores')}
+          onClick={() => onNavigate('incidencias')}
           actionLabel={TEXTS.dashboard.actions.viewIncidents}
         >
           <div className="text-3xl font-bold text-[#000935]">{data?.open_incidents_count ?? TEXTS.common.noData}</div>

@@ -151,6 +151,16 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     }));
   }, [filteredEvents]);
 
+  const incidentByRelatedEventId = useMemo(() => {
+    const out = new Map<string, NonNullable<WorkerDetail['incident_history']>[number]>();
+    for (const incident of worker?.incident_history ?? []) {
+      if (!incident.related_event_id) continue;
+      if (out.has(incident.related_event_id)) continue;
+      out.set(incident.related_event_id, incident);
+    }
+    return out;
+  }, [worker?.incident_history]);
+
   const handleDeactivate = async () => {
     if (!worker) return;
     try {
@@ -547,11 +557,20 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                         </span>
                       </summary>
                       <div className="px-3 pb-3 space-y-2">
-                        {group.events.map((event) => (
+                        {group.events.map((event) => {
+                          const incident = incidentByRelatedEventId.get(event.id);
+                          return (
                           <div key={event.id} className="flex flex-wrap justify-between items-start gap-3 p-3 bg-[#f9f9f9] rounded-lg">
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <div className="font-medium text-[#000935]">{event.event_type}</div>
+                                {incident && (
+                                  <span className={`inline-flex px-2 py-0.5 text-[11px] rounded-full ${incident.has_correction ? 'bg-[#ecfeff] text-[#0f766e]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>
+                                    {incident.has_correction
+                                      ? TEXTS.workerDetail.correction.incidentCorrectedBadge
+                                      : TEXTS.workerDetail.correction.incidentDetectedBadge}
+                                  </span>
+                                )}
                                 {event.corrected && (
                                   <span className="inline-flex px-2 py-0.5 text-[11px] rounded-full bg-[#00C9CE]/10 text-[#0f766e]">
                                     {TEXTS.workerDetail.correction.correctedBadge}
@@ -614,7 +633,8 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                               )}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </details>
                   ))

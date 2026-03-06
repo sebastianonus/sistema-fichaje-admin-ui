@@ -7,6 +7,7 @@ export const TEXTS = {
     dashboard: 'Dashboard',
     administracion: 'Administracion',
     trabajadores: 'Trabajadores',
+    incidencias: 'Incidencias',
     exports: 'Exports',
     ajustes: 'Ajustes',
   },
@@ -114,7 +115,7 @@ export const TEXTS = {
       viewActive: 'Ver activos',
       viewClockedIn: 'Ver fichados ahora',
       goToExports: 'Ir a exports',
-      viewIncidents: 'Ver incidencias',
+      viewIncidents: 'Ver historial de incidencias',
     },
     incidents: {
       longOpenShift: 'Jornada abierta demasiado tiempo',
@@ -124,6 +125,57 @@ export const TEXTS = {
     errors: {
       loadError: 'Error al cargar',
       retry: 'Reintentar',
+      generic: 'Error inesperado',
+    },
+  },
+
+  incidencias: {
+    title: 'Incidencias',
+    subtitle: 'Historial completo de incidencias y correcciones',
+    filters: {
+      status: 'Estado',
+      search: 'Buscar',
+      detectedFrom: 'Detectada desde',
+      detectedTo: 'Detectada hasta',
+      options: {
+        all: 'Todas',
+        open: 'Abiertas',
+        resolved: 'Resueltas',
+        dismissed: 'Descartadas',
+      },
+      placeholder: 'Nombre, email o telefono',
+    },
+    table: {
+      columns: {
+        trabajador: 'Trabajador',
+        incidencia: 'Incidencia',
+        estado: 'Estado',
+        evento: 'Evento relacionado',
+        detectada: 'Detectada',
+        correccion: 'Correccion',
+        acciones: 'Acciones',
+      },
+      states: {
+        open: 'Abierta',
+        resolved: 'Resuelta',
+        dismissed: 'Descartada',
+      },
+      correction: {
+        yes: 'Corregida',
+        no: 'Sin correccion',
+      },
+    },
+    actions: {
+      refresh: 'Actualizar',
+      openWorker: 'Ver trabajador',
+      correctNow: 'Corregir ahora',
+    },
+    correctionModal: {
+      title: 'Corregir incidencia',
+      description: 'Se conservara traza de incidencia y de la correccion aplicada.',
+    },
+    empty: 'No hay incidencias con los filtros seleccionados.',
+    errors: {
       generic: 'Error inesperado',
     },
   },
@@ -277,6 +329,8 @@ export const TEXTS = {
       correctedBadge: 'Corregido',
       originalLabel: 'Original:',
       reasonLabel: 'Motivo:',
+      incidentDetectedBadge: 'Incidencia detectada',
+      incidentCorrectedBadge: 'Incidencia corregida',
     },
     location: {
       label: 'Ubicacion:',

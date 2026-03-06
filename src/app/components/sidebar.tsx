@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Download, Settings, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, Download, Settings, Menu, X, AlertTriangle } from 'lucide-react';
 import { Page } from '@/app/App';
 import { useState } from 'react';
 import logo from '@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png';
@@ -14,6 +14,7 @@ interface SidebarProps {
 const menuItems = [
   { id: 'dashboard' as Page, label: TEXTS.nav.dashboard, icon: LayoutDashboard },
   { id: 'trabajadores' as Page, label: TEXTS.nav.trabajadores, icon: Users, section: TEXTS.nav.administracion },
+  { id: 'incidencias' as Page, label: TEXTS.nav.incidencias, icon: AlertTriangle },
   { id: 'exports' as Page, label: TEXTS.nav.exports, icon: Download },
   { id: 'ajustes' as Page, label: TEXTS.nav.ajustes, icon: Settings },
 ];

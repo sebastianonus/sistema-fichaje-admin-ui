@@ -1,5 +1,5 @@
 import { getSessionAccessToken, getStaticAdminToken } from "@/lib/supabase";
-import type { DashboardMetrics, ExportRecord, WorkerDetail, WorkerSummary } from "@/lib/types";
+import type { DashboardMetrics, ExportRecord, IncidentHistoryItem, WorkerDetail, WorkerSummary } from "@/lib/types";
 import { TEXTS } from "@/constants/texts";
 
 type ApiEnvelope<T> = { ok: boolean; data: T; error?: string; details?: string };
@@ -78,6 +78,25 @@ export async function getWorkers(filters: {
 
 export async function getWorker(workerId: string) {
   const res = await request<ApiEnvelope<WorkerDetail>>(`/admin-workers/${workerId}`);
+  return res.data;
+}
+
+export async function getIncidentsHistory(filters?: {
+  status?: "OPEN" | "RESOLVED" | "DISMISSED";
+  search?: string;
+  detected_from?: string;
+  detected_to?: string;
+  limit?: number;
+}) {
+  const qp = new URLSearchParams();
+  if (filters?.status) qp.set("status", filters.status);
+  if (filters?.search) qp.set("search", filters.search);
+  if (filters?.detected_from) qp.set("detected_from", toUtcDateStart(filters.detected_from));
+  if (filters?.detected_to) qp.set("detected_to", toUtcDateEnd(filters.detected_to));
+  if (typeof filters?.limit === "number") qp.set("limit", String(filters.limit));
+
+  const qs = qp.toString();
+  const res = await request<ApiEnvelope<IncidentHistoryItem[]>>(`/admin-workers/incidents${qs ? `?${qs}` : ""}`);
   return res.data;
 }
 
