@@ -15,16 +15,17 @@ function formatFriendlyExportName(exp: ExportRecord) {
   const from = exp.filters.from ? new Date(exp.filters.from).toISOString().slice(0, 10) : null;
   const to = exp.filters.to ? new Date(exp.filters.to).toISOString().slice(0, 10) : null;
   const stamp = new Date(exp.created_at).toISOString().slice(0, 16).replace('T', '_').replace(':', '');
+  const extension = exp.filters.format === 'xlsx' ? '.xlsx' : exp.filters.format === 'pdf' ? '.pdf' : TEXTS.exports.fileNames.extension;
   if (from && to) {
-    return `${TEXTS.exports.fileNames.base}${TEXTS.exports.fileNames.separator}${from}${TEXTS.exports.fileNames.rangeJoin}${to}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
+    return `${TEXTS.exports.fileNames.base}${TEXTS.exports.fileNames.separator}${from}${TEXTS.exports.fileNames.rangeJoin}${to}${TEXTS.exports.fileNames.separator}${stamp}${extension}`;
   }
   if (from) {
-    return `${TEXTS.exports.fileNames.fromPrefix}${TEXTS.exports.fileNames.separator}${from}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
+    return `${TEXTS.exports.fileNames.fromPrefix}${TEXTS.exports.fileNames.separator}${from}${TEXTS.exports.fileNames.separator}${stamp}${extension}`;
   }
   if (to) {
-    return `${TEXTS.exports.fileNames.toPrefix}${TEXTS.exports.fileNames.separator}${to}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
+    return `${TEXTS.exports.fileNames.toPrefix}${TEXTS.exports.fileNames.separator}${to}${TEXTS.exports.fileNames.separator}${stamp}${extension}`;
   }
-  return `${TEXTS.exports.fileNames.base}${TEXTS.exports.fileNames.separator}${stamp}${TEXTS.exports.fileNames.extension}`;
+  return `${TEXTS.exports.fileNames.base}${TEXTS.exports.fileNames.separator}${stamp}${extension}`;
 }
 
 function displayExportFileName(exp: ExportRecord) {
@@ -235,6 +236,7 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
   const [dateTo, setDateTo] = useState('');
   const [workerId, setWorkerId] = useState('');
   const [timezone, setTimezone] = useState<'peninsula' | 'canarias'>('peninsula');
+  const [format, setFormat] = useState<'csv' | 'xlsx' | 'pdf'>('xlsx');
   const [workers, setWorkers] = useState<WorkerSummary[]>([]);
   const [workersLoading, setWorkersLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -270,6 +272,7 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
         to: dateTo,
         worker_id: workerId || undefined,
         timezone,
+        format,
       });
       window.open(created.signed_url, '_blank', 'noopener,noreferrer');
       onCreated?.();
@@ -359,6 +362,19 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
             >
               <option value="peninsula">{TEXTS.exports.timezone.peninsula}</option>
               <option value="canarias">{TEXTS.exports.timezone.canarias}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block mb-2">{TEXTS.exports.format.label}</label>
+            <select
+              value={format}
+              onChange={(e) => setFormat(e.target.value as 'csv' | 'xlsx' | 'pdf')}
+              className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
+            >
+              <option value="xlsx">{TEXTS.exports.format.xlsx}</option>
+              <option value="pdf">{TEXTS.exports.format.pdf}</option>
+              <option value="csv">{TEXTS.exports.format.csv}</option>
             </select>
           </div>
 

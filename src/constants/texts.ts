@@ -469,6 +469,12 @@ export const TEXTS = {
       peninsula: 'Peninsula (Madrid)',
       canarias: 'Islas Canarias',
     },
+    format: {
+      label: 'Formato',
+      csv: 'CSV (Excel compatible)',
+      xlsx: 'Excel (.xlsx)',
+      pdf: 'PDF',
+    },
     workerFilter: {
       label: 'Trabajador (opcional)',
       all: 'Todos los trabajadores',
@@ -491,7 +497,7 @@ export const TEXTS = {
     title: 'Generar export',
     info: {
       title: 'Export legal y auditable',
-      description: 'Este archivo incluira hash SHA-256 y firma temporal. Formato CSV con encoding UTF-8 + BOM.',
+      description: 'Este archivo incluira hash SHA-256 y firma temporal. Puedes elegir CSV, Excel (.xlsx) o PDF.',
     },
     fields: {
       dateFrom: 'Fecha desde',

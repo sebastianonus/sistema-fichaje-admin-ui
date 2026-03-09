@@ -191,6 +191,7 @@ export async function createExport(payload: {
   to: string;
   worker_id?: string;
   timezone?: "peninsula" | "canarias";
+  format?: "csv" | "xlsx" | "pdf";
 }) {
   const normalizedPayload = {
     ...payload,
@@ -201,6 +202,7 @@ export async function createExport(payload: {
   const res = await request<ApiEnvelope<{
     export_id: string;
     status: "READY";
+    format?: "csv" | "xlsx" | "pdf";
     row_count: number;
     sha256_hex: string;
     storage_path: string;

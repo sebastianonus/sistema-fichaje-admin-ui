@@ -125,6 +125,7 @@ export interface ExportRecord {
     from?: string;
     to?: string;
     worker_id?: string;
+    format?: "csv" | "xlsx" | "pdf";
   };
   status: "PENDING" | "READY" | "FAILED" | "DELETED";
   row_count: number | null;
