@@ -62,8 +62,11 @@ export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }:
     const segments: Segment[] = [];
     let openStart: number | null = null;
     for (const m of markers) {
-      if (m.type === "CLOCK_IN") openStart = m.minute;
-      if (m.type === "CLOCK_OUT" && openStart !== null) {
+      if (m.type === "CLOCK_IN" || m.type === "BREAK_END") {
+        openStart = m.minute;
+        continue;
+      }
+      if ((m.type === "BREAK_START" || m.type === "CLOCK_OUT") && openStart !== null) {
         segments.push({ start: clampMinute(openStart), end: clampMinute(m.minute) });
         openStart = null;
       }

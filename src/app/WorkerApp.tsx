@@ -46,7 +46,7 @@ const WORKER_TERMS_DOC_URL = (import.meta.env.VITE_WORKER_TERMS_DOC_URL as strin
 const WORKER_PRIVACY_DOC_URL = (import.meta.env.VITE_WORKER_PRIVACY_DOC_URL as string | undefined)?.trim() || "";
 const APP_VERSION_LABEL = (import.meta.env.VITE_APP_VERSION as string | undefined)?.trim() || "worker-portal";
 const WORKER_TERMS_READING_TEXT = [
-  "1. Uso del sistema: El portal de fichaje solo puede utilizarse para registrar de forma veraz tu hora de entrada y salida durante tu jornada laboral.",
+  "1. Uso del sistema: El portal de fichaje solo puede utilizarse para registrar de forma veraz tu hora de entrada, pausa y salida durante tu jornada laboral.",
   "2. Cuenta personal: Tus credenciales son personales e intransferibles. No compartas tu email ni tu contrasena con terceros.",
   "3. Veracidad del fichaje: Debes fichar en el momento real de inicio y fin de trabajo. Queda prohibido fichar por otra persona o manipular registros.",
   "4. Geolocalizacion: El sistema puede registrar ubicacion y precision GPS unicamente para verificar la trazabilidad del fichaje.",
@@ -81,19 +81,39 @@ function closedMinutesFromEvents(dayEvents: WorkerEvent[]) {
     (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
   );
   let openIn: WorkerEvent | null = null;
+  let breakStart: number | null = null;
+  let breakAccum = 0;
   let total = 0;
   for (const ev of asc) {
     if (ev.event_type === "CLOCK_IN") {
       openIn = ev;
+      breakStart = null;
+      breakAccum = 0;
+      continue;
+    }
+    if (ev.event_type === "BREAK_START" && openIn && breakStart === null) {
+      breakStart = new Date(ev.happened_at).getTime();
+      continue;
+    }
+    if (ev.event_type === "BREAK_END" && openIn && breakStart !== null) {
+      const breakEnd = new Date(ev.happened_at).getTime();
+      breakAccum += Math.max(0, breakEnd - breakStart);
+      breakStart = null;
       continue;
     }
     if (ev.event_type === "CLOCK_OUT" && openIn) {
+      const outMs = new Date(ev.happened_at).getTime();
+      if (breakStart !== null) {
+        breakAccum += Math.max(0, outMs - breakStart);
+      }
       const minutes = Math.max(
         0,
-        Math.round((new Date(ev.happened_at).getTime() - new Date(openIn.happened_at).getTime()) / 60000),
+        Math.round((outMs - new Date(openIn.happened_at).getTime() - breakAccum) / 60000),
       );
       total += minutes;
       openIn = null;
+      breakStart = null;
+      breakAccum = 0;
     }
   }
   return total;
@@ -154,7 +174,8 @@ export default function WorkerApp() {
 
   const effectiveEvents = useMemo(() => buildEffectiveTimeEvents(events), [events]);
   const lastEvent = effectiveEvents[0]?.event_type ?? null;
-  const isClockedIn = lastEvent === "CLOCK_IN";
+  const isOnBreak = lastEvent === "BREAK_START";
+  const isClockedIn = !!lastEvent && lastEvent !== "CLOCK_OUT";
 
   const mustChangePassword = profile?.password_reset_required === true;
   const resetDeadline = profile?.password_reset_deadline ? new Date(profile.password_reset_deadline) : null;
@@ -202,19 +223,34 @@ export default function WorkerApp() {
     );
 
     let openClockIn: WorkerEvent | null = null;
+    let openBreakStartMs: number | null = null;
+    let openBreakAccumMs = 0;
     const durationByClockOutId = new Map<string, number>();
     let totalClosedMinutesToday = 0;
 
     for (const ev of asc) {
       if (ev.event_type === "CLOCK_IN") {
         openClockIn = ev;
+        openBreakStartMs = null;
+        openBreakAccumMs = 0;
+        continue;
+      }
+      if (ev.event_type === "BREAK_START" && openClockIn && openBreakStartMs === null) {
+        openBreakStartMs = new Date(ev.happened_at).getTime();
+        continue;
+      }
+      if (ev.event_type === "BREAK_END" && openClockIn && openBreakStartMs !== null) {
+        const breakEnd = new Date(ev.happened_at).getTime();
+        openBreakAccumMs += Math.max(0, breakEnd - openBreakStartMs);
+        openBreakStartMs = null;
         continue;
       }
 
       if (ev.event_type === "CLOCK_OUT" && openClockIn) {
         const inTime = new Date(openClockIn.happened_at).getTime();
         const outTime = new Date(ev.happened_at).getTime();
-        const minutes = Math.max(0, Math.round((outTime - inTime) / 60000));
+        const totalBreakMs = openBreakAccumMs + (openBreakStartMs !== null ? Math.max(0, outTime - openBreakStartMs) : 0);
+        const minutes = Math.max(0, Math.round((outTime - inTime - totalBreakMs) / 60000));
         durationByClockOutId.set(ev.id, minutes);
 
         if (isTodayLocal(openClockIn.happened_at) && isTodayLocal(ev.happened_at)) {
@@ -222,14 +258,17 @@ export default function WorkerApp() {
         }
 
         openClockIn = null;
+        openBreakStartMs = null;
+        openBreakAccumMs = 0;
       }
     }
 
     let openMinutesToday = 0;
     if (openClockIn && isTodayLocal(openClockIn.happened_at)) {
+      const openBreakMs = openBreakAccumMs + (openBreakStartMs !== null ? Math.max(0, nowTick - openBreakStartMs) : 0);
       openMinutesToday = Math.max(
         0,
-        Math.round((nowTick - new Date(openClockIn.happened_at).getTime()) / 60000),
+        Math.round((nowTick - new Date(openClockIn.happened_at).getTime() - openBreakMs) / 60000),
       );
     }
 
@@ -440,13 +479,13 @@ export default function WorkerApp() {
     }
   };
 
-  const handleClock = async (eventType: "CLOCK_IN" | "CLOCK_OUT") => {
+  const handleClock = async (eventType: "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END") => {
     try {
       setActionLoading(true);
       setError(null);
       setLocationWarning(null);
       const location = await getCurrentLocation();
-      if (!location) {
+      if (!location && (eventType === "CLOCK_IN" || eventType === "CLOCK_OUT")) {
         setLocationWarning(t.status.gpsMissingWarning);
         throw new Error(t.errors.gpsRequired);
       }
@@ -597,7 +636,7 @@ export default function WorkerApp() {
           </h2>
           <p className="text-sm text-[#666666] mb-4">
             {profile?.is_active
-              ? (isClockedIn ? t.status.openClock : t.status.noOpenClock)
+              ? (isOnBreak ? t.status.openBreak : isClockedIn ? t.status.openClock : t.status.noOpenClock)
               : t.status.inactiveUser}
           </p>
           {workedStats.hasClosedToday && (
@@ -613,6 +652,13 @@ export default function WorkerApp() {
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50"
             >
               <LogIn className="w-4 h-4" /> {t.actions.clockIn}
+            </button>
+            <button
+              onClick={() => handleClock(isOnBreak ? "BREAK_END" : "BREAK_START")}
+              disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0ea5e9] text-white rounded-lg hover:bg-[#0284c7] disabled:opacity-50"
+            >
+              <Clock3 className="w-4 h-4" /> {isOnBreak ? t.actions.breakEnd : t.actions.breakStart}
             </button>
             <button
               onClick={() => handleClock("CLOCK_OUT")}

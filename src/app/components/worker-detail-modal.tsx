@@ -84,14 +84,33 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
     );
     const latestClockIn = latestJourneyEvents.find((e) => e.event_type === 'CLOCK_IN') ?? null;
     const latestClockOut = [...latestJourneyEvents].reverse().find((e) => e.event_type === 'CLOCK_OUT') ?? null;
-    const totalMinutes = latestClockIn && latestClockOut
-      ? Math.max(
+    let totalMinutes: number | null = null;
+    if (latestClockIn && latestClockOut) {
+      const segment = latestJourneyEvents.filter(
+        (e) =>
+          new Date(e.happened_at).getTime() >= new Date(latestClockIn.happened_at).getTime() &&
+          new Date(e.happened_at).getTime() <= new Date(latestClockOut.happened_at).getTime(),
+      );
+      let breakStart: number | null = null;
+      let breakAccumMs = 0;
+      for (const e of segment) {
+        if (e.event_type === 'BREAK_START' && breakStart === null) {
+          breakStart = new Date(e.happened_at).getTime();
+        } else if (e.event_type === 'BREAK_END' && breakStart !== null) {
+          breakAccumMs += Math.max(0, new Date(e.happened_at).getTime() - breakStart);
+          breakStart = null;
+        }
+      }
+      if (breakStart !== null) {
+        breakAccumMs += Math.max(0, new Date(latestClockOut.happened_at).getTime() - breakStart);
+      }
+      totalMinutes = Math.max(
         0,
         Math.round(
-          (new Date(latestClockOut.happened_at).getTime() - new Date(latestClockIn.happened_at).getTime()) / 60000,
+          (new Date(latestClockOut.happened_at).getTime() - new Date(latestClockIn.happened_at).getTime() - breakAccumMs) / 60000,
         ),
-      )
-      : null;
+      );
+    }
 
     return {
       latestJourneyDate,

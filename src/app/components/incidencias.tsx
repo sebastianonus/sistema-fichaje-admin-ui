@@ -33,7 +33,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
   const [detectedTo, setDetectedTo] = useState("");
 
   const [selectedIncident, setSelectedIncident] = useState<IncidentHistoryItem | null>(null);
-  const [correctionType, setCorrectionType] = useState<"CLOCK_IN" | "CLOCK_OUT">("CLOCK_IN");
+  const [correctionType, setCorrectionType] = useState<"CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END">("CLOCK_IN");
   const [correctionAt, setCorrectionAt] = useState("");
   const [correctionNote, setCorrectionNote] = useState("");
 
@@ -73,7 +73,15 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
   const openCorrection = (incident: IncidentHistoryItem) => {
     if (!incident.related_event) return;
     setSelectedIncident(incident);
-    setCorrectionType(incident.related_event.event_type === "CLOCK_OUT" ? "CLOCK_OUT" : "CLOCK_IN");
+    setCorrectionType(
+      incident.related_event.event_type === "CLOCK_OUT"
+        ? "CLOCK_OUT"
+        : incident.related_event.event_type === "BREAK_START"
+          ? "BREAK_START"
+          : incident.related_event.event_type === "BREAK_END"
+            ? "BREAK_END"
+            : "CLOCK_IN",
+    );
     setCorrectionAt(toDateTimeLocalValue(incident.related_event.happened_at));
     setCorrectionNote("");
     setInfo(null);
@@ -268,11 +276,13 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                 <label className="block mb-2">{TEXTS.workerDetail.correction.eventType}</label>
                 <select
                   value={correctionType}
-                  onChange={(e) => setCorrectionType(e.target.value as "CLOCK_IN" | "CLOCK_OUT")}
+                  onChange={(e) => setCorrectionType(e.target.value as "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END")}
                   className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg"
                 >
                   <option value="CLOCK_IN">CLOCK_IN</option>
                   <option value="CLOCK_OUT">CLOCK_OUT</option>
+                  <option value="BREAK_START">BREAK_START</option>
+                  <option value="BREAK_END">BREAK_END</option>
                 </select>
               </div>
               <div>

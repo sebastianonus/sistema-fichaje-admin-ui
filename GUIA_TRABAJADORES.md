@@ -5,6 +5,7 @@
 ONUS Fichaje es la herramienta que usamos para registrar:
 
 - la hora de entrada
+- las pausas (inicio y fin)
 - la hora de salida
 - el historial de fichajes
 - la ubicacion desde la que se ficha
@@ -85,6 +86,18 @@ Si todo esta correcto:
 - el sistema cerrara tu jornada
 - quedara guardada la hora de salida
 - quedara guardada la ubicacion
+
+## Como registrar una pausa
+
+Si haces un descanso durante la jornada:
+
+1. Pulsa `Iniciar pausa` al empezar el descanso.
+2. Pulsa `Reanudar` al volver a la actividad.
+
+Importante:
+
+- usa siempre los botones de pausa para dejar trazabilidad correcta
+- no uses `Fichar salida` + `Fichar entrada` para simular una pausa, salvo instruccion expresa de administracion
 
 ## Aviso de fin de jornada
 

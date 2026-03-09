@@ -127,7 +127,7 @@ export async function updateWorker(workerId: string, updates: {
 
 export async function correctWorkerEvent(payload: {
   related_event_id: string;
-  corrected_event_type: "CLOCK_IN" | "CLOCK_OUT";
+  corrected_event_type: "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END";
   corrected_happened_at: string;
   note: string;
 }) {

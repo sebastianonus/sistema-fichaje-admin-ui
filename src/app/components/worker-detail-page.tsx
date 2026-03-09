@@ -50,19 +50,37 @@ function closedMinutesFromEvents(events: WorkerDetail['time_events']) {
     (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
   );
   let openIn: WorkerDetail['time_events'][number] | null = null;
+  let breakStart: number | null = null;
+  let breakAccum = 0;
   let total = 0;
   for (const ev of asc) {
     if (ev.event_type === 'CLOCK_IN') {
       openIn = ev;
+      breakStart = null;
+      breakAccum = 0;
+      continue;
+    }
+    if (ev.event_type === 'BREAK_START' && openIn && breakStart === null) {
+      breakStart = new Date(ev.happened_at).getTime();
+      continue;
+    }
+    if (ev.event_type === 'BREAK_END' && openIn && breakStart !== null) {
+      const breakEnd = new Date(ev.happened_at).getTime();
+      breakAccum += Math.max(0, breakEnd - breakStart);
+      breakStart = null;
       continue;
     }
     if (ev.event_type === 'CLOCK_OUT' && openIn) {
+      const outMs = new Date(ev.happened_at).getTime();
+      if (breakStart !== null) breakAccum += Math.max(0, outMs - breakStart);
       const minutes = Math.max(
         0,
-        Math.round((new Date(ev.happened_at).getTime() - new Date(openIn.happened_at).getTime()) / 60000),
+        Math.round((outMs - new Date(openIn.happened_at).getTime() - breakAccum) / 60000),
       );
       total += minutes;
       openIn = null;
+      breakStart = null;
+      breakAccum = 0;
     }
   }
   return total;
@@ -91,7 +109,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [phoneDraft, setPhoneDraft] = useState('');
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [selectedCorrectionEventId, setSelectedCorrectionEventId] = useState<string | null>(null);
-  const [correctionType, setCorrectionType] = useState<'CLOCK_IN' | 'CLOCK_OUT'>('CLOCK_IN');
+  const [correctionType, setCorrectionType] = useState<'CLOCK_IN' | 'CLOCK_OUT' | 'BREAK_START' | 'BREAK_END'>('CLOCK_IN');
   const [correctionAt, setCorrectionAt] = useState('');
   const [correctionNote, setCorrectionNote] = useState('');
 
@@ -278,7 +296,15 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
 
   const openCorrectionModal = (event: (typeof filteredEvents)[number]) => {
     setSelectedCorrectionEventId(event.id);
-    setCorrectionType((event.event_type === 'CLOCK_OUT' ? 'CLOCK_OUT' : 'CLOCK_IN'));
+    setCorrectionType(
+      event.event_type === 'CLOCK_OUT'
+        ? 'CLOCK_OUT'
+        : event.event_type === 'BREAK_START'
+          ? 'BREAK_START'
+          : event.event_type === 'BREAK_END'
+            ? 'BREAK_END'
+            : 'CLOCK_IN',
+    );
     setCorrectionAt(toDateTimeLocalValue(event.happened_at));
     setCorrectionNote('');
     setShowCorrectionModal(true);
@@ -622,7 +648,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                                   <MapPin className="w-4 h-4" />
                                 </a>
                               )}
-                              {(event.event_type === 'CLOCK_IN' || event.event_type === 'CLOCK_OUT') && (
+                              {(event.event_type === 'CLOCK_IN' || event.event_type === 'CLOCK_OUT' || event.event_type === 'BREAK_START' || event.event_type === 'BREAK_END') && (
                                 <button
                                   type="button"
                                   onClick={() => openCorrectionModal(event)}
@@ -717,11 +743,13 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                 <label className="block mb-2">{TEXTS.workerDetail.correction.eventType}</label>
                 <select
                   value={correctionType}
-                  onChange={(e) => setCorrectionType(e.target.value as 'CLOCK_IN' | 'CLOCK_OUT')}
+                  onChange={(e) => setCorrectionType(e.target.value as 'CLOCK_IN' | 'CLOCK_OUT' | 'BREAK_START' | 'BREAK_END')}
                   className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg"
                 >
                   <option value="CLOCK_IN">CLOCK_IN</option>
                   <option value="CLOCK_OUT">CLOCK_OUT</option>
+                  <option value="BREAK_START">BREAK_START</option>
+                  <option value="BREAK_END">BREAK_END</option>
                 </select>
               </div>
               <div>

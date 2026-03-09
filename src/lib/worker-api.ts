@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { TEXTS } from "@/constants/texts";
 
-type ClockEventType = "CLOCK_IN" | "CLOCK_OUT";
+type ClockEventType = "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END";
 type ClockLocation = {
   latitude?: number | null;
   longitude?: number | null;

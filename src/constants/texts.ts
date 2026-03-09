@@ -44,7 +44,7 @@ export const TEXTS = {
     loading: 'Cargando...',
     title: 'Portal trabajador',
     loginTitle: 'Acceso mensajero',
-    loginSubtitle: 'Inicia sesion para fichar entrada y salida',
+    loginSubtitle: 'Inicia sesion para fichar entrada, pausa y salida',
     sections: {
       clockStatus: 'Estado de fichaje',
       latestEvents: 'Ultimos eventos',
@@ -52,6 +52,7 @@ export const TEXTS = {
     },
     status: {
       openClock: 'Tienes fichaje abierto (entrada registrada).',
+      openBreak: 'Tienes una pausa activa. Reanuda o finaliza la jornada.',
       noOpenClock: 'No tienes fichaje abierto.',
       inactiveUser: 'Tu usuario esta inactivo. Contacta con administracion.',
       workedToday: 'Horas trabajadas hoy (tramos cerrados):',
@@ -67,6 +68,8 @@ export const TEXTS = {
     },
     actions: {
       clockIn: 'Fichar entrada',
+      breakStart: 'Iniciar pausa',
+      breakEnd: 'Reanudar',
       clockOut: 'Fichar salida',
       closeSession: 'Cerrar sesion',
       updatePassword: 'Actualizar contrasena',

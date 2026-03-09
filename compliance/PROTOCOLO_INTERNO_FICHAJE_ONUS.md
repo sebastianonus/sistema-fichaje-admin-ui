@@ -17,6 +17,7 @@ Aplica a toda la plantilla que presta servicios para ONUS EXPRESS S.L., con inde
 
 ## 3. Reglas de fichaje
 - Cada persona trabajadora debe registrar entrada y salida diaria.
+- Cuando haya descanso intrajornada, se registra inicio y fin de pausa en la app (evento de pausa explicito).
 - El fichaje se realiza con credenciales personales e intransferibles.
 - No se permite fichar por otra persona.
 - El sistema registra fecha, hora y metadatos tecnicos asociados al evento.
@@ -34,7 +35,7 @@ Aplica a toda la plantilla que presta servicios para ONUS EXPRESS S.L., con inde
 ## 6. Conservacion y disponibilidad
 - Los registros de jornada se conservan durante 4 anos.
 - Deben estar disponibles para la persona trabajadora, su representacion legal y la Inspeccion de Trabajo.
-- Se habilitan exports historicos en formato legible (CSV y, en su caso, PDF).
+- Se habilitan exports historicos en formato legible (CSV, Excel XLSX y PDF).
 
 ## 7. Proteccion de datos
 - La base juridica principal es el cumplimiento de obligaciones laborales y de control horario.
