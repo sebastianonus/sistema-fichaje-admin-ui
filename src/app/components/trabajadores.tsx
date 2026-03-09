@@ -67,8 +67,9 @@ function buildFallbackOnboardingMessage(item: PreparedCredential) {
     item.email ? `Usuario: ${item.email}` : '',
     `Contrasena inicial: ${item.temp_password}`,
     deadlineHint.trim(),
+    workerPortalLink ? `Acceso a la app: ${workerPortalLink}` : '',
+    'Para guardarla en tu telefono: iPhone (Safari o Chrome): Compartir -> Anadir a pantalla de inicio. Android (Chrome): menu de 3 puntos -> Instalar app / Anadir a pantalla principal -> Instalar/Anadir.',
     'Si necesitas ayuda, contacta con administracion.',
-    workerPortalLink ? `Acceso directo: ${workerPortalLink}` : '',
   ].filter(Boolean);
   return parts.join(' ');
 }
