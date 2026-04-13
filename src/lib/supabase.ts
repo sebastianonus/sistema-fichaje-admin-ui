@@ -6,6 +6,9 @@ declare const __WORKER_BUILD_ID__: string;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const forceWorkerMode = (import.meta.env.VITE_FORCE_WORKER_MODE as string | undefined) === "true";
+const devAutoLoginAdminEnabled = (import.meta.env.VITE_DEV_AUTO_LOGIN_ADMIN as string | undefined) === "true";
+const devAutoLoginAdminEmail = (import.meta.env.VITE_DEV_AUTO_LOGIN_ADMIN_EMAIL as string | undefined)?.trim() || "";
+const devAutoLoginAdminPassword = (import.meta.env.VITE_DEV_AUTO_LOGIN_ADMIN_PASSWORD as string | undefined)?.trim() || "";
 const workerBuildId = typeof __WORKER_BUILD_ID__ !== "undefined" ? __WORKER_BUILD_ID__ : "dev";
 const workerStorageKey = `onus-auth-worker-${workerBuildId}`;
 
@@ -55,8 +58,25 @@ export function hasStaticAdminToken() {
   return !!getStaticAdminToken();
 }
 
-export async function getSessionAccessToken() {
+export function getDevAutoAdminCredentials() {
+  if (!devAutoLoginAdminEnabled) return null;
+  if (!devAutoLoginAdminEmail || !devAutoLoginAdminPassword) return null;
+  return {
+    email: devAutoLoginAdminEmail,
+    password: devAutoLoginAdminPassword,
+  };
+}
+
+export async function getSessionAccessToken(options?: { forceRefresh?: boolean }) {
   if (!supabase) return null;
+
+  if (options?.forceRefresh) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (!error && data.session?.access_token) {
+      return data.session.access_token;
+    }
+  }
+
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? null;
 }

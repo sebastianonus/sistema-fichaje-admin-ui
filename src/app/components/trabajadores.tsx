@@ -24,6 +24,8 @@ type PreparedCredential = {
   error?: string;
 };
 
+const onboardingEmailAuthUser = (import.meta.env.VITE_ONBOARDING_EMAIL_AUTHUSER as string | undefined)?.trim();
+
 function normalizePhoneForWhatsapp(raw: string | null | undefined) {
   const value = String(raw || '').trim();
   if (!value) return null;
@@ -104,6 +106,30 @@ function buildWorkerPortalPrefillUrl(email: string | null | undefined, password:
   } catch {
     return null;
   }
+}
+
+function buildOnboardingEmailUrl(item: PreparedCredential) {
+  if (item.status.endsWith('FAILED')) return null;
+
+  const recipient = (item.email || '').trim();
+  const body = (item.message || '').trim();
+  if (!recipient || !body) return null;
+
+  const subject = `Acceso ONUS Fichaje - ${item.full_name}`;
+
+  if (onboardingEmailAuthUser) {
+    const params = new URLSearchParams({
+      authuser: onboardingEmailAuthUser,
+      view: 'cm',
+      fs: '1',
+      to: recipient,
+      su: subject,
+      body,
+    });
+    return `https://mail.google.com/mail/?${params.toString()}`;
+  }
+
+  return `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) {
@@ -440,63 +466,80 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
           <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
             <p className="text-[#000935] mb-3">{TEXTS.trabajadores.info.preparedCredentialsTitle}</p>
             <div className="flex flex-col gap-2">
-              {preparedResults.map((item) => (
-                <div key={item.worker_id} className="border border-[#e5e5e5] rounded-lg p-3">
-                  <div className="font-medium text-[#000935]">{item.full_name}</div>
-                  <div className="text-sm text-[#666666] mt-1">
-                    {TEXTS.trabajadores.table.columns.telefono}: {item.phone_number || TEXTS.common.noData}
-                  </div>
-                  <div className="text-sm text-[#666666]">
-                    {TEXTS.workerPassword.fields.newPassword}: {item.temp_password || TEXTS.common.noData}
-                  </div>
-                  {item.password_reset_deadline && (
+              {preparedResults.map((item) => {
+                const onboardingEmailUrl = buildOnboardingEmailUrl(item);
+
+                return (
+                  <div key={item.worker_id} className="border border-[#e5e5e5] rounded-lg p-3">
+                    <div className="font-medium text-[#000935]">{item.full_name}</div>
+                    <div className="text-sm text-[#666666] mt-1">
+                      {TEXTS.trabajadores.table.columns.email}: {item.email || TEXTS.common.noData}
+                    </div>
                     <div className="text-sm text-[#666666]">
-                      {TEXTS.workerPortal.passwordModal.messageWithDeadlinePrefix} {new Date(item.password_reset_deadline).toLocaleString('es-ES')}
+                      {TEXTS.trabajadores.table.columns.telefono}: {item.phone_number || TEXTS.common.noData}
                     </div>
-                  )}
-                  {item.message && (
-                    <div className="mt-2">
-                      <textarea
-                        readOnly
-                        value={item.message}
-                        className="w-full min-h-[96px] px-3 py-2 bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg text-sm text-[#000935]"
-                      />
+                    <div className="text-sm text-[#666666]">
+                      {TEXTS.workerPassword.fields.newPassword}: {item.temp_password || TEXTS.common.noData}
                     </div>
-                  )}
-                  <div className="mt-2 flex items-center gap-3 text-sm">
+                    {item.password_reset_deadline && (
+                      <div className="text-sm text-[#666666]">
+                        {TEXTS.workerPortal.passwordModal.messageWithDeadlinePrefix} {new Date(item.password_reset_deadline).toLocaleString('es-ES')}
+                      </div>
+                    )}
                     {item.message && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const ok = await copyToClipboard(item.message || '');
-                          if (!ok) setError(TEXTS.trabajadores.errors.clipboardFailed);
-                        }}
-                        className="text-[#000935] hover:underline"
-                      >
-                        {TEXTS.trabajadores.actions.copyMessage}
-                      </button>
+                      <div className="mt-2">
+                        <textarea
+                          readOnly
+                          value={item.message}
+                          className="w-full min-h-[96px] px-3 py-2 bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg text-sm text-[#000935]"
+                        />
+                      </div>
                     )}
-                    {item.status === 'READY' && item.whatsapp_url ? (
-                      <a
-                        href={item.whatsapp_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#00C9CE] hover:underline"
-                      >
-                        {TEXTS.trabajadores.actions.openWhatsapp}
-                      </a>
-                    ) : item.status === 'READY' && !item.whatsapp_url ? (
-                      <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.whatsappUrlMissing}</span>
-                    ) : item.status === 'READY_NO_PHONE' ? (
-                      <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.noPhoneForWhatsapp}</span>
-                    ) : item.status.endsWith('FAILED') ? (
-                      <span className="text-[#dc2626]">{item.error || TEXTS.trabajadores.errors.credentialsPrepareFailed}</span>
-                    ) : (
-                      <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.whatsappUrlMissing}</span>
-                    )}
+                    <div className="mt-2 flex items-center gap-3 text-sm">
+                      {item.message && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await copyToClipboard(item.message || '');
+                            if (!ok) setError(TEXTS.trabajadores.errors.clipboardFailed);
+                          }}
+                          className="text-[#000935] hover:underline"
+                        >
+                          {TEXTS.trabajadores.actions.copyMessage}
+                        </button>
+                      )}
+                      {onboardingEmailUrl ? (
+                        <a
+                          href={onboardingEmailUrl}
+                          className="text-[#000935] hover:underline"
+                        >
+                          {TEXTS.trabajadores.actions.openEmail}
+                        </a>
+                      ) : (item.status === 'READY' || item.status === 'READY_NO_PHONE') ? (
+                        <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.emailMissing}</span>
+                      ) : null}
+                      {item.status === 'READY' && item.whatsapp_url ? (
+                        <a
+                          href={item.whatsapp_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#00C9CE] hover:underline"
+                        >
+                          {TEXTS.trabajadores.actions.openWhatsapp}
+                        </a>
+                      ) : item.status === 'READY' && !item.whatsapp_url ? (
+                        <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.whatsappUrlMissing}</span>
+                      ) : item.status === 'READY_NO_PHONE' ? (
+                        <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.noPhoneForWhatsapp}</span>
+                      ) : item.status.endsWith('FAILED') ? (
+                        <span className="text-[#dc2626]">{item.error || TEXTS.trabajadores.errors.credentialsPrepareFailed}</span>
+                      ) : (
+                        <span className="text-[#dc2626]">{TEXTS.trabajadores.errors.whatsappUrlMissing}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

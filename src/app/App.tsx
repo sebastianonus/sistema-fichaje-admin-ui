@@ -8,7 +8,7 @@ import { Exports } from '@/app/components/exports';
 import { Ajustes } from '@/app/components/ajustes';
 import { Login } from '@/app/components/login';
 import { TEXTS } from '@/constants/texts';
-import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
+import { ensureRole, getDevAutoAdminCredentials, hasStaticAdminToken, signInWithRole, signOutAdmin, supabase } from '@/lib/supabase';
 
 export type Page = 'dashboard' | 'trabajadores' | 'incidencias' | 'workerDetail' | 'exports' | 'ajustes';
 export type WorkersPreset = {
@@ -26,6 +26,19 @@ export default function App() {
 
   useEffect(() => {
     async function boot() {
+      const tryDevAutoLogin = async () => {
+        const credentials = getDevAutoAdminCredentials();
+        if (!credentials) return false;
+
+        try {
+          await signOutAdmin();
+          await signInWithRole(credentials.email, credentials.password, 'admin');
+          return true;
+        } catch {
+          return false;
+        }
+      };
+
       if (hasStaticAdminToken()) {
         setIsAuthenticated(true);
         setAuthReady(true);
@@ -40,7 +53,8 @@ export default function App() {
 
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        setIsAuthenticated(false);
+        const authed = await tryDevAutoLogin();
+        setIsAuthenticated(authed);
         setAuthReady(true);
         return;
       }
@@ -49,7 +63,8 @@ export default function App() {
         await ensureRole('admin');
         setIsAuthenticated(true);
       } catch {
-        setIsAuthenticated(false);
+        const authed = await tryDevAutoLogin();
+        setIsAuthenticated(authed);
       }
       setAuthReady(true);
     }
