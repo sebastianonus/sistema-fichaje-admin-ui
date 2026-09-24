@@ -8,7 +8,8 @@
     "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit:ui": "node scripts/admin-visual-audit.mjs"
+    "audit:ui": "node scripts/admin-visual-audit.mjs",
+    "audit:worker": "node scripts/worker-visual-audit.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

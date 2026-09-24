@@ -14,6 +14,26 @@ type WorkerTermsAcceptance = {
   app_version?: string | null;
 };
 
+function getClockErrorMessage(body: { error?: string; details?: string }, status: number) {
+  if (body.details) return body.details;
+
+  const messages: Record<string, string> = {
+    METHOD_NOT_ALLOWED: "Accion no permitida.",
+    SERVER_MISCONFIGURED: "El servicio de fichaje no esta disponible.",
+    UNAUTHORIZED: "La sesion ha caducado. Vuelve a iniciar sesion.",
+    DB_ERROR: "No se pudo consultar el estado del fichaje.",
+    PROFILE_NOT_FOUND: "No se encontro el perfil del trabajador.",
+    WORKER_INACTIVE: "Tu usuario esta inactivo. Contacta con administracion.",
+    PASSWORD_CHANGE_REQUIRED: "Debes cambiar tu contrasena antes de fichar.",
+    INVALID_EVENT_TYPE: "La accion de fichaje no es valida.",
+    GPS_REQUIRED: "Debes permitir la ubicacion para registrar el fichaje.",
+    INVALID_SEQUENCE: "La accion no coincide con el estado actual del fichaje.",
+    INSERT_FAILED: "No se pudo guardar el fichaje.",
+  };
+
+  return messages[body.error ?? ""] ?? `No se pudo registrar el fichaje (${status}).`;
+}
+
 function getFunctionsBaseUrl() {
   const custom = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL as string | undefined;
   if (custom) return custom.replace(/\/$/, "");
@@ -80,7 +100,7 @@ export async function sendClockEvent(event_type: ClockEventType, note?: string, 
   const raw = await res.text();
   const body = raw ? JSON.parse(raw) : {};
   if (!res.ok || body?.ok === false) {
-    throw new Error(body?.details || body?.error || `HTTP_${res.status}`);
+    throw new Error(getClockErrorMessage(body, res.status));
   }
 
   return body.data;

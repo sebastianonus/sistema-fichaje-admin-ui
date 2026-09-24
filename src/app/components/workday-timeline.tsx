@@ -78,12 +78,12 @@ export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }:
   }, [events, nowMinute]);
 
   return (
-    <div className="bg-white border border-[#e5e5e5] rounded-xl p-5">
-      <h3 className="text-[#000935] font-semibold mb-4">{title}</h3>
+    <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
+      <h3 className="text-[#000935] font-semibold mb-3">{title}</h3>
 
-      <div className="rounded-3xl border-4 border-[#00C9CE] bg-[#f7fbfd] p-5">
-        <div className="relative h-24">
-          <div className="absolute top-0 left-0 right-0 flex justify-between px-1 text-[12px] md:text-[16px] leading-none font-semibold text-[#2dc3d5]">
+      <div className="rounded-xl border-2 border-[#00C9CE] bg-[#f7fbfd] p-4">
+        <div className="relative h-20">
+          <div className="absolute top-0 left-0 right-0 flex justify-between px-1 text-[11px] md:text-sm leading-none font-semibold text-[#2dc3d5]">
             <span>{TEXTS.timeline.hours.start}</span>
             <span>{TEXTS.timeline.hours.six}</span>
             <span>{TEXTS.timeline.hours.twelve}</span>
@@ -91,8 +91,8 @@ export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }:
             <span>{TEXTS.timeline.hours.end}</span>
           </div>
 
-          <div className="absolute top-[48px] left-0 right-0 h-8 rounded-full border-[5px] border-[#9b9b9b] bg-[#f8f8f8]">
-            <div className="absolute top-1/2 left-[6px] right-[6px] h-[14px] -translate-y-1/2">
+          <div className="absolute top-10 left-0 right-0 h-7 rounded-full border-4 border-[#9b9b9b] bg-[#f8f8f8]">
+            <div className="absolute top-1/2 left-[6px] right-[6px] h-3 -translate-y-1/2">
               {processed.segments.map((s, i) => {
                 const startPct = (clampMinute(s.start) / DAY_MINUTES) * 100;
                 const endPct = (clampMinute(s.end) / DAY_MINUTES) * 100;
@@ -101,7 +101,7 @@ export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }:
                 return (
                   <div
                     key={`${s.start}-${s.end}-${i}`}
-                    className="absolute top-0 h-[14px] rounded-full bg-[#2dc3d5]"
+                    className="absolute top-0 h-3 rounded-full bg-[#2dc3d5]"
                     style={{
                       left: `${startPct}%`,
                       width: `max(${widthPct}%, 2px)`,
@@ -112,7 +112,7 @@ export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }:
 
               {processed.hasOpenSegment && processed.openHandleMinute !== null && (
                 <div
-                  className="absolute top-1/2 h-[20px] w-[20px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_2px_#2dc3d5]"
+                  className="absolute top-1/2 h-[18px] w-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#7ee83d] shadow-[0_0_0_2px_#2dc3d5]"
                   style={{
                     left: `${(clampMinute(processed.openHandleMinute) / DAY_MINUTES) * 100}%`,
                   }}

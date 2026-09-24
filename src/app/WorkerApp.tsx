@@ -3,6 +3,7 @@ import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-
 import { changeCurrentUserPassword, ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { acceptWorkerTerms, getMyTimeEvents, getWorkerProfile, getWorkerTermsStatus, sendClockEvent } from "@/lib/worker-api";
 import { buildEffectiveTimeEvents } from "@/lib/time-events";
+import { formatClockEventLabel } from "@/lib/time-event-labels";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import { TEXTS } from "@/constants/texts";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
@@ -667,15 +668,15 @@ export default function WorkerApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
-      <div className="max-w-3xl mx-auto space-y-4">
-        <div className="bg-white border border-[#e5e5e5] rounded-xl p-4 md:p-5">
+    <div className="min-h-screen bg-[#f8fafc] p-3 md:p-6">
+      <div className="max-w-4xl mx-auto space-y-3">
+        <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 min-w-0">
                 <img src={headerLogo} alt="ONUS Express" className="h-7 md:h-8 w-auto mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <h1 className="text-xl md:text-2xl font-bold text-[#000935] leading-tight">{t.title}</h1>
+                  <h1 className="text-xl font-bold text-[#000935] leading-tight">{t.title}</h1>
                 </div>
               </div>
               <button onClick={handleLogout} className="px-3 py-2 border border-[#e5e5e5] rounded-lg text-[#000935] hover:bg-[#f9f9f9] whitespace-nowrap">
@@ -698,7 +699,7 @@ export default function WorkerApp() {
           </div>
         )}
 
-        <div className="bg-white border border-[#e5e5e5] rounded-xl p-5">
+        <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
           <h2 className="font-semibold text-[#000935] mb-3 inline-flex items-center gap-2">
             <Clock3 className="w-4 h-4" /> {t.sections.clockStatus}
           </h2>
@@ -713,25 +714,25 @@ export default function WorkerApp() {
             </p>
           )}
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               onClick={() => handleClock("CLOCK_IN")}
               disabled={!profile?.is_active || isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50"
             >
               <LogIn className="w-4 h-4" /> {t.actions.clockIn}
             </button>
             <button
               onClick={() => handleClock(isOnBreak ? "BREAK_END" : "BREAK_START")}
               disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0ea5e9] text-white rounded-lg hover:bg-[#0284c7] disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#0ea5e9] text-white rounded-lg hover:bg-[#0284c7] disabled:opacity-50"
             >
               <Clock3 className="w-4 h-4" /> {isOnBreak ? t.actions.breakEnd : t.actions.breakStart}
             </button>
             <button
               onClick={() => handleClock("CLOCK_OUT")}
               disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] disabled:opacity-50"
             >
               <LogOut className="w-4 h-4" /> {t.actions.clockOut}
             </button>
@@ -756,14 +757,14 @@ export default function WorkerApp() {
 
         <WorkdayTimeline events={effectiveEvents} title={t.sections.timelineTitle} />
 
-        <div className="bg-white border border-[#e5e5e5] rounded-xl p-5">
+        <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
           <h2 className="font-semibold text-[#000935] mb-3">{t.sections.latestEvents}</h2>
           {loadingData ? (
             <p className="text-sm text-[#666666]">{t.loading}</p>
           ) : events.length === 0 ? (
             <p className="text-sm text-[#666666]">{t.status.noEvents}</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {groupedEvents.map((group, idx) => (
                 <details key={group.key} className="border border-[#e5e5e5] rounded-lg bg-white" open={idx === 0}>
                   <summary className="list-none cursor-pointer p-3 flex items-center justify-between text-xs font-semibold">
@@ -772,11 +773,11 @@ export default function WorkerApp() {
                       {t.status.totalLabel} {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : t.status.noClosedSegments}
                     </span>
                   </summary>
-                  <div className="px-3 pb-3 space-y-2">
+                  <div className="px-3 pb-3 space-y-1.5">
                     {group.events.map((ev) => (
-                      <div key={ev.id} className="p-3 rounded-lg bg-[#f9f9f9] flex items-center justify-between">
+                      <div key={ev.id} className="px-3 py-2 rounded-lg bg-[#f9f9f9] flex items-center justify-between gap-3">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-[#000935]">{ev.event_type}</span>
+                          <span className="text-sm font-medium text-[#000935]">{formatClockEventLabel(ev.event_type)}</span>
                           {ev.event_type === "CLOCK_OUT" && workedStats.durationByClockOutId.has(ev.id) && (
                             <span className="text-xs text-[#0f766e]">
                               {t.status.segmentTotal} {formatMinutes(workedStats.durationByClockOutId.get(ev.id) ?? 0)}
