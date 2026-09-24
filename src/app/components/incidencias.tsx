@@ -276,7 +276,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                 >
                   {TEXTS.incidencias.actions.openIncident}
                 </button>
-                {item.status === "OPEN" && item.can_correct && item.related_event && (
+                {item.can_correct && item.related_event && (
                   <button
                     onClick={() => openCorrection(item)}
                     disabled={saving}
