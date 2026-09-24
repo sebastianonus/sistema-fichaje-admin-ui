@@ -4,6 +4,7 @@ import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { TEXTS } from '@/constants/texts';
 import { activateWorker, changeWorkerPassword, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
+import { formatClockEventLabel } from '@/lib/time-event-labels';
 import type { WorkerDetail } from '@/lib/types';
 
 interface WorkerDetailModalProps {
@@ -369,7 +370,7 @@ export function WorkerDetailModal({ workerId, onClose }: WorkerDetailModalProps)
                       (showFullHistory ? worker.time_events : historyState.latestJourneyEvents).map((event) => (
                         <div key={event.id} className="flex justify-between items-start p-3 bg-[#f9f9f9] rounded-lg">
                           <div>
-                            <div className="font-medium text-[#000935]">{event.event_type}</div>
+                            <div className="font-medium text-[#000935]">{formatClockEventLabel(event.event_type)}</div>
                             {event.note && <div className="text-sm text-[#666666] mt-1">{event.note}</div>}
                           </div>
                           <div className="text-sm text-[#666666]">{new Date(event.happened_at).toLocaleString('es-ES')}</div>

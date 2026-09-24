@@ -4,6 +4,7 @@ import { CreateWorkerModal } from '@/app/components/create-worker-modal';
 import { TEXTS } from '@/constants/texts';
 import { getWorkers, sendWorkerOnboardingMessages } from '@/lib/api';
 import { getIncidentView } from '@/lib/incident-view';
+import { formatClockEventLabel } from '@/lib/time-event-labels';
 import type { WorkerSummary } from '@/lib/types';
 import type { WorkersPreset } from '@/app/App';
 
@@ -676,7 +677,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                       <td className="px-3 py-2.5 text-[#666666]">
                         {worker.last_event ? (
                           <div className="flex flex-col">
-                            <span className="text-sm">{worker.last_event.event_type}</span>
+                            <span className="text-sm">{formatClockEventLabel(worker.last_event.event_type)}</span>
                             <span className="text-xs text-[#999999]">{new Date(worker.last_event.happened_at).toLocaleString('es-ES')}</span>
                           </div>
                         ) : TEXTS.trabajadores.table.noEvent}

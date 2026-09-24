@@ -13,6 +13,7 @@ import {
   getIncidentView,
 } from '@/lib/incident-view';
 import { buildEffectiveTimeEvents, summarizeWorkdayEvents } from '@/lib/time-events';
+import { formatClockEventLabel } from '@/lib/time-event-labels';
 import type { WorkerDetail } from '@/lib/types';
 
 interface WorkerDetailPageProps {
@@ -66,12 +67,8 @@ function formatEventDateTime(value: string) {
 }
 
 function eventLabel(type: string) {
-  if (type === 'CLOCK_IN') return 'Entrada';
-  if (type === 'CLOCK_OUT') return 'Salida';
-  if (type === 'BREAK_START') return 'Inicio pausa';
-  if (type === 'BREAK_END') return 'Fin pausa';
   if (type === 'CORRECTION') return 'Correccion';
-  return type;
+  return formatClockEventLabel(type);
 }
 
 function suggestedEventToAdd(events: Array<{ event_type: string; happened_at: string }>) {
@@ -877,7 +874,7 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
                               {event.corrected && !incidentIsOpen && (
                                 <div className="text-sm text-[#666666] mt-1 break-words">
                                   {TEXTS.workerDetail.correction.originalLabel}{' '}
-                                  {event.original_event_type} {formatEventTime(event.original_happened_at ?? event.happened_at)}
+                                  {formatClockEventLabel(event.original_event_type ?? '')} {formatEventTime(event.original_happened_at ?? event.happened_at)}
                                 </div>
                               )}
                               {event.correction_note && !incidentIsOpen && (
@@ -1075,7 +1072,7 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
                 >
                   <option value="CLOCK_IN">Entrada</option>
                   <option value="BREAK_START">Inicio pausa</option>
-                  <option value="BREAK_END">Fin pausa</option>
+                  <option value="BREAK_END">Final pausa</option>
                   <option value="CLOCK_OUT">Salida</option>
                 </select>
               </div>
@@ -1188,10 +1185,10 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
                   onChange={(e) => setCorrectionType(e.target.value as 'CLOCK_IN' | 'CLOCK_OUT' | 'BREAK_START' | 'BREAK_END')}
                   className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg"
                 >
-                  <option value="CLOCK_IN">CLOCK_IN</option>
-                  <option value="CLOCK_OUT">CLOCK_OUT</option>
-                  <option value="BREAK_START">BREAK_START</option>
-                  <option value="BREAK_END">BREAK_END</option>
+                  <option value="CLOCK_IN">Entrada</option>
+                  <option value="BREAK_START">Inicio pausa</option>
+                  <option value="BREAK_END">Final pausa</option>
+                  <option value="CLOCK_OUT">Salida</option>
                 </select>
               </div>
               <div>

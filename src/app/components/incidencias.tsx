@@ -325,10 +325,10 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                   onChange={(e) => setCorrectionType(e.target.value as "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END")}
                   className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg"
                 >
-                  <option value="CLOCK_IN">CLOCK_IN</option>
-                  <option value="CLOCK_OUT">CLOCK_OUT</option>
-                  <option value="BREAK_START">BREAK_START</option>
-                  <option value="BREAK_END">BREAK_END</option>
+                  <option value="CLOCK_IN">Entrada</option>
+                  <option value="BREAK_START">Inicio pausa</option>
+                  <option value="BREAK_END">Final pausa</option>
+                  <option value="CLOCK_OUT">Salida</option>
                 </select>
               </div>
               <div>
