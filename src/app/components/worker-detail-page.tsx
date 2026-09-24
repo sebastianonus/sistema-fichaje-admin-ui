@@ -495,7 +495,7 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
 
   return (
     <>
-      <div className="p-8 space-y-6">
+      <div className="px-4 py-5 md:px-6 md:py-6 space-y-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -513,9 +513,9 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
 
         {!loading && worker && (
           <>
-            <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
-              <h3 className="mb-4">{TEXTS.workerDetail.sections.basicInfo}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
+              <h3 className="mb-3">{TEXTS.workerDetail.sections.basicInfo}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                 <div>
                   <label className="block mb-2">{TEXTS.workerDetail.fields.nombre}</label>
                   {editingName ? (
@@ -670,12 +670,12 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
               </div>
             </div>
 
-            <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+            <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
               <WorkdayTimeline events={effectiveEvents} title={TEXTS.workerPortal.sections.timelineTitle} />
             </div>
 
-            <div ref={incidentsSectionRef} className="bg-white border border-[#e5e5e5] rounded-lg p-6 scroll-mt-20">
-              <h3 className="mb-4">{TEXTS.workerDetail.sections.incidents}</h3>
+            <div ref={incidentsSectionRef} className="bg-white border border-[#e5e5e5] rounded-lg p-4 scroll-mt-20">
+              <h3 className="mb-3">{TEXTS.workerDetail.sections.incidents}</h3>
               {worker.open_incidents && worker.open_incidents.length > 0 ? (
                 <div className="space-y-2">
                   {worker.open_incidents.map((incident) => {
@@ -747,7 +747,7 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
               )}
             </div>
 
-            <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+            <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <h3>{TEXTS.workerDetail.sections.timeEvents}</h3>
                 <button

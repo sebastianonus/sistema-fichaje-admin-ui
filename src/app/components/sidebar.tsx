@@ -44,12 +44,12 @@ export function Sidebar({ currentPage, onNavigate, showLogout, onLogout }: Sideb
       </header>
 
       {/* Desktop sidebar - PRESENTATIONAL ONLY */}
-      <aside className="hidden lg:flex lg:flex-col w-64 bg-[#000935] border-r border-[#1a2860] h-screen">
-        <div className="p-6 border-b border-[#1a2860]">
-          <img src={logo} alt="ONUS" className="h-8" />
+      <aside className="hidden lg:flex lg:flex-col w-56 shrink-0 bg-[#000935] border-r border-[#1a2860] h-screen">
+        <div className="px-5 py-4 border-b border-[#1a2860]">
+          <img src={logo} alt="ONUS" className="h-7" />
         </div>
         
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-3">
           <div className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -58,15 +58,15 @@ export function Sidebar({ currentPage, onNavigate, showLogout, onLogout }: Sideb
               return (
                 <div key={item.id}>
                   {item.section && (
-                    <div className="px-3 py-2 mt-4 mb-2">
-                      <span className="text-xs text-[#00C9CE] uppercase tracking-wider">
+                    <div className="px-3 py-1.5 mt-3 mb-1">
+                      <span className="text-xs text-[#00C9CE] uppercase">
                         {item.section}
                       </span>
                     </div>
                   )}
                   <button
                     onClick={() => onNavigate(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                       isActive
                         ? 'bg-[#00C9CE] text-white'
                         : 'text-white hover:bg-[#0a1850]'
@@ -81,10 +81,10 @@ export function Sidebar({ currentPage, onNavigate, showLogout, onLogout }: Sideb
           </div>
         </nav>
         {showLogout && onLogout && (
-          <div className="p-4 border-t border-[#1a2860]">
+          <div className="p-3 border-t border-[#1a2860]">
             <button
               onClick={onLogout}
-              className="w-full px-3 py-2.5 rounded-lg text-white border border-[#1a2860] hover:bg-[#0a1850] transition-colors"
+              className="w-full px-3 py-2 rounded-lg text-white border border-[#1a2860] hover:bg-[#0a1850] transition-colors"
             >
               {TEXTS.login.actions.logout}
             </button>
@@ -112,7 +112,7 @@ export function Sidebar({ currentPage, onNavigate, showLogout, onLogout }: Sideb
                     <div key={item.id}>
                       {item.section && (
                         <div className="px-3 py-2 mt-4 mb-2">
-                          <span className="text-xs text-[#00C9CE] uppercase tracking-wider">
+                          <span className="text-xs text-[#00C9CE] uppercase">
                             {item.section}
                           </span>
                         </div>

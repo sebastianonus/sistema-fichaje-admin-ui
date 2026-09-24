@@ -147,7 +147,7 @@ export default function App() {
         showLogout={!hasStaticAdminToken()}
         onLogout={handleLogout}
       />
-      <main className="flex-1 overflow-auto pt-16 lg:pt-0">
+      <main className="admin-content min-w-0 flex-1 overflow-auto pt-16 lg:pt-0">
         {currentPage === 'dashboard' && (
           <Dashboard
             onNavigate={navigateTo}

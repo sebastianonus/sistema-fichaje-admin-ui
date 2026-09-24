@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Filter, X, Search, Calendar, Users } from 'lucide-react';
+import { Plus, Filter, X, Search, Calendar, Users, Eye, KeyRound } from 'lucide-react';
 import { CreateWorkerModal } from '@/app/components/create-worker-modal';
 import { TEXTS } from '@/constants/texts';
 import { getWorkers, sendWorkerOnboardingMessages } from '@/lib/api';
@@ -322,45 +322,45 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
 
   return (
     <>
-      <div className="p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="px-4 py-5 md:px-6 md:py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <div>
             <h1>{TEXTS.trabajadores.title}</h1>
             <p className="text-[#666666] mt-1">{TEXTS.trabajadores.subtitle}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleViewCredentials()}
               disabled={sendingCredentials || selectedIds.length === 0}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#000935] text-white rounded-lg hover:bg-[#0a1850] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 bg-[#000935] text-white rounded-lg hover:bg-[#0a1850] transition-colors disabled:opacity-50"
             >
               {TEXTS.trabajadores.actions.viewCredentials}
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-colors ${
                 showFilters
                   ? 'border-[#00C9CE] text-[#00C9CE] bg-[#00C9CE]/5'
                   : 'border-[#e5e5e5] text-[#000935] hover:bg-[#f9f9f9]'
               }`}
             >
-              <Filter className="w-5 h-5" />
+              <Filter className="w-4 h-4" />
               {TEXTS.trabajadores.actions.filters}
               {hasFilters && <span className="w-2 h-2 bg-[#00C9CE] rounded-full" />}
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               {TEXTS.trabajadores.actions.createWorker}
             </button>
           </div>
         </div>
 
         {showFilters && (
-          <div className="bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg p-4 mb-5">
+            <div className="flex items-center justify-between mb-3">
               <h3>{TEXTS.trabajadores.filters.title}</h3>
               {hasFilters && (
                 <button onClick={clearFilters} className="text-sm text-[#00C9CE] hover:underline">
@@ -369,7 +369,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
               <div>
                 <label className="block mb-2">{TEXTS.trabajadores.filters.estado}</label>
                 <select
@@ -465,24 +465,24 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         )}
 
         {loading && (
-          <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 text-[#666666]">{TEXTS.common.loading}</div>
+          <div className="bg-white border border-[#e5e5e5] rounded-lg p-4 text-[#666666]">{TEXTS.common.loading}</div>
         )}
 
         {error && (
-          <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+          <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
             <p className="text-[#dc2626] mb-2">{TEXTS.common.error}: {error}</p>
             <button onClick={fetchWorkers} className="text-[#00C9CE] hover:underline">{TEXTS.dashboard.errors.retry}</button>
           </div>
         )}
 
         {info && (
-          <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+          <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
             <p className="text-[#0f766e]">{info}</p>
           </div>
         )}
 
         {preparedResults.length > 0 && (
-          <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+          <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
             <p className="text-[#000935] mb-3">{TEXTS.trabajadores.info.preparedCredentialsTitle}</p>
             <div className="flex flex-col gap-2">
               {preparedResults.map((item) => {
@@ -597,10 +597,21 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         {!loading && !error && !isEmpty && (
           <div className="bg-white border border-[#e5e5e5] rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed min-w-[1080px] xl:min-w-0">
+                <colgroup>
+                  <col className="w-10" />
+                  <col className="w-[16%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[72px]" />
+                </colgroup>
                 <thead className="bg-[#f9f9f9] border-b border-[#e5e5e5]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">
                       <input
                         type="checkbox"
                         checked={allVisibleSelected}
@@ -608,14 +619,14 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                         className="w-4 h-4 text-[#00C9CE] border-[#e5e5e5] rounded"
                       />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.nombre}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.email}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.telefono}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.incidencia}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.activo}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.creado}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.ultimoEvento}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.trabajadores.table.columns.acciones}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.trabajadores.table.columns.nombre}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.trabajadores.table.columns.email}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.trabajadores.table.columns.telefono}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.trabajadores.table.columns.incidencia}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.trabajadores.table.columns.activo}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.trabajadores.table.columns.creado}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.trabajadores.table.columns.ultimoEvento}</th>
+                    <th className="px-2 py-2.5 text-center text-xs font-medium text-[#666666] uppercase" aria-label={TEXTS.trabajadores.table.columns.acciones} />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e5e5e5]">
@@ -625,7 +636,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                       onClick={() => openWorker(worker.id)}
                       className="hover:bg-[#f9f9f9] cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-3 py-2.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(worker.id)}
@@ -633,10 +644,10 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                           className="w-4 h-4 text-[#00C9CE] border-[#e5e5e5] rounded"
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap"><div className="font-medium text-[#000935]">{worker.full_name}</div></td>
-                      <td className="px-6 py-4 whitespace-nowrap text-[#666666]">{worker.email || TEXTS.common.noData}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-[#666666]">{worker.phone_number || TEXTS.common.noData}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2.5"><div className="font-medium text-[#000935] truncate" title={worker.full_name}>{worker.full_name}</div></td>
+                      <td className="px-3 py-2.5 text-[#666666] truncate" title={worker.email || undefined}>{worker.email || TEXTS.common.noData}</td>
+                      <td className="px-3 py-2.5 whitespace-nowrap text-[#666666] truncate" title={worker.phone_number || undefined}>{worker.phone_number || TEXTS.common.noData}</td>
+                      <td className="px-3 py-2.5">
                         {worker.open_incident ? (
                           <div className="flex flex-col">
                             <span className="inline-flex px-2 py-1 text-xs rounded-full bg-[#fef2f2] text-[#dc2626]">
@@ -646,7 +657,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                                 detected_at: worker.open_incident.detected_at,
                               }).shortTitle}
                             </span>
-                            <span className="text-xs text-[#999999] mt-1">
+                            <span className="text-xs text-[#999999] mt-0.5 truncate" title={getIncidentView({ incident_type: worker.open_incident.incident_type, status: 'OPEN', detected_at: worker.open_incident.detected_at }).recommendedAction}>
                               {getIncidentView({
                                 incident_type: worker.open_incident.incident_type,
                                 status: 'OPEN',
@@ -656,13 +667,13 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                           </div>
                         ) : TEXTS.trabajadores.table.noEvent}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2.5 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs rounded-full ${worker.is_active ? 'bg-[#00C9CE]/10 text-[#00C9CE]' : 'bg-[#f5f5f5] text-[#666666]'}`}>
                           {worker.is_active ? TEXTS.trabajadores.table.status.active : TEXTS.trabajadores.table.status.inactive}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-[#666666]">{new Date(worker.created_at).toLocaleDateString('es-ES')}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-[#666666]">
+                      <td className="px-3 py-2.5 whitespace-nowrap text-[#666666]">{new Date(worker.created_at).toLocaleDateString('es-ES')}</td>
+                      <td className="px-3 py-2.5 text-[#666666]">
                         {worker.last_event ? (
                           <div className="flex flex-col">
                             <span className="text-sm">{worker.last_event.event_type}</span>
@@ -670,26 +681,29 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                           </div>
                         ) : TEXTS.trabajadores.table.noEvent}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
+                      <td className="px-2 py-2.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               openWorker(worker.id);
                             }}
-                            className="text-[#00C9CE] hover:underline"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#00C9CE] hover:bg-[#00C9CE]/10"
+                            aria-label={TEXTS.trabajadores.table.actions.view}
+                            title={TEXTS.trabajadores.table.actions.view}
                           >
-                            {TEXTS.trabajadores.table.actions.view}
+                            <Eye className="h-4 w-4" />
                           </button>
-                          <span className="text-[#e5e5e5]">|</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleViewCredentials([worker.id]);
                             }}
-                            className="text-[#000935] hover:underline"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#000935] hover:bg-[#f5f5f5]"
+                            aria-label={TEXTS.trabajadores.actions.viewCredentials}
+                            title={TEXTS.trabajadores.actions.viewCredentials}
                           >
-                            {TEXTS.trabajadores.actions.viewCredentials}
+                            <KeyRound className="h-4 w-4" />
                           </button>
                         </div>
                       </td>

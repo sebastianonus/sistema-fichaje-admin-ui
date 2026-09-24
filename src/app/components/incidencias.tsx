@@ -121,13 +121,13 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
+    <div className="px-4 py-5 md:px-6 md:py-6">
+      <div className="mb-5">
         <h1>{TEXTS.incidencias.title}</h1>
         <p className="text-[#666666] mt-1">{TEXTS.incidencias.subtitle}</p>
       </div>
 
-      <div className="bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg p-4 mb-6">
+      <div className="bg-[#f9f9f9] border border-[#e5e5e5] rounded-lg p-4 mb-5">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label className="block mb-2">{TEXTS.incidencias.filters.status}</label>
@@ -201,11 +201,11 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
       )}
 
       {loading ? (
-        <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 text-[#666666]">{TEXTS.common.loading}</div>
+        <div className="bg-white border border-[#e5e5e5] rounded-lg p-4 text-[#666666]">{TEXTS.common.loading}</div>
       ) : filteredItems.length === 0 ? (
-        <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 text-[#666666]">{TEXTS.incidencias.empty}</div>
+        <div className="bg-white border border-[#e5e5e5] rounded-lg p-4 text-[#666666]">{TEXTS.incidencias.empty}</div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredItems.map((item) => {
             const incidentView = getIncidentView({
               incident_type: item.incident_type,
@@ -217,7 +217,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
             });
 
             return (
-            <div key={item.id} className="bg-white border border-[#e5e5e5] rounded-lg p-4">
+            <div key={item.id} className="bg-white border border-[#e5e5e5] rounded-lg p-3.5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="font-semibold text-[#000935]">{incidentView.title}</div>
@@ -240,7 +240,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-3 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5 mt-2.5 text-sm">
                 <div>
                   <div className="text-[#666666]">{incidentView.primaryTimeLabel}</div>
                   <div className="font-semibold text-[#000935]">{formatIncidentDateTime(incidentView.clockInAt)}</div>
@@ -262,14 +262,13 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                   <div className="text-[#666666]">{incidentView.actionLabel}</div>
                   <div className="font-semibold text-[#dc2626]">{incidentView.correctionButton}</div>
                 </div>
-                <div className="md:col-span-5 rounded-lg bg-[#fff7f7] border border-[#fecaca] p-3">
-                  <div className="text-[#991b1b] font-semibold">{incidentView.problemLabel}</div>
-                  <div className="text-[#000935] mt-1">{incidentView.description}</div>
-                  <div className="text-[#000935] mt-1">{incidentView.recommendedAction}</div>
+                <div className="md:col-span-5 rounded-lg bg-[#fff7f7] border border-[#fecaca] px-3 py-2 flex flex-wrap gap-x-2 text-sm">
+                  <span className="text-[#991b1b] font-semibold">{incidentView.problemLabel}:</span>
+                  <span className="text-[#000935]">{incidentView.description}</span>
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-[#e5e5e5] flex items-center gap-3 text-sm">
+              <div className="mt-2.5 pt-2.5 border-t border-[#e5e5e5] flex items-center gap-3 text-sm">
                 <button
                   onClick={() => onOpenWorkerDetail(item.worker_id, item.id)}
                   className="text-[#000935] hover:underline"
@@ -280,7 +279,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                   <button
                     onClick={() => openCorrection(item)}
                     disabled={saving}
-                    className="inline-flex px-3 py-2 rounded-lg bg-[#00C9CE] text-white hover:bg-[#00b3b8] disabled:opacity-50"
+                    className="inline-flex px-3 py-1.5 rounded-lg bg-[#00C9CE] text-white hover:bg-[#00b3b8] disabled:opacity-50"
                   >
                     {incidentView.correctionButton}
                   </button>

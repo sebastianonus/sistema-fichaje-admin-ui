@@ -95,7 +95,7 @@ export function Exports() {
 
   return (
     <>
-      <div className="p-8">
+      <div className="px-4 py-5 md:px-6 md:py-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1>{TEXTS.exports.title}</h1>
@@ -110,10 +110,10 @@ export function Exports() {
           </button>
         </div>
 
-        {loading && <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 text-[#666666]">{TEXTS.common.loading}</div>}
+        {loading && <div className="bg-white border border-[#e5e5e5] rounded-lg p-4 text-[#666666]">{TEXTS.common.loading}</div>}
 
         {error && (
-          <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 mb-6">
+          <div className="bg-white border border-[#e5e5e5] rounded-lg p-4 mb-5">
             <p className="text-[#dc2626] mb-2">{TEXTS.common.error}: {error}</p>
             <button onClick={fetchExports} className="text-[#00C9CE] hover:underline">{TEXTS.dashboard.errors.retry}</button>
           </div>
@@ -138,50 +138,50 @@ export function Exports() {
         {!loading && !error && !isEmpty && (
           <div className="bg-white border border-[#e5e5e5] rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+                <table className="w-full table-fixed min-w-[900px] xl:min-w-0">
                 <thead className="bg-[#f9f9f9] border-b border-[#e5e5e5]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.exports.table.columns.archivo}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.exports.table.columns.periodo}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.exports.table.columns.creado}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.exports.table.columns.creadoPor}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.exports.table.columns.hash}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.exports.table.columns.estado}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider">{TEXTS.exports.table.columns.acciones}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.exports.table.columns.archivo}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.exports.table.columns.periodo}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.exports.table.columns.creado}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.exports.table.columns.creadoPor}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.exports.table.columns.hash}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.exports.table.columns.estado}</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-[#666666] uppercase">{TEXTS.exports.table.columns.acciones}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e5e5e5]">
                   {exportsData.map((exp) => (
                     <tr key={exp.id} className="hover:bg-[#f9f9f9] transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-[#666666]" />
-                          <span className="font-medium text-[#000935]">{displayExportFileName(exp)}</span>
+                          <span className="font-medium text-[#000935] truncate" title={displayExportFileName(exp)}>{displayExportFileName(exp)}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-[#666666]">
+                      <td className="px-3 py-2.5 text-[#666666]">
                         <div className="flex flex-col">
                           <span className="text-sm">{exp.filters.from ? new Date(exp.filters.from).toLocaleDateString('es-ES') : TEXTS.common.noData}</span>
                           <span className="text-sm">{exp.filters.to ? new Date(exp.filters.to).toLocaleDateString('es-ES') : TEXTS.common.noData}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-[#666666]">{new Date(exp.created_at).toLocaleString('es-ES')}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2.5 whitespace-nowrap text-[#666666]">{new Date(exp.created_at).toLocaleString('es-ES')}</td>
+                      <td className="px-3 py-2.5">
                         <span className="text-sm text-[#000935]">{getReadableCreatorName(exp)}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2.5">
                         <code className="text-xs text-[#666666] bg-[#f9f9f9] px-2 py-1 rounded">
                           {exp.sha256_hex ? `${exp.sha256_hex.slice(0, 8)}...` : TEXTS.common.noData}
                         </code>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2.5">
                         {exp.status === 'DELETED' ? (
                           <span className="inline-flex px-2 py-1 text-xs rounded-full bg-[#f5f5f5] text-[#666666]">{TEXTS.exports.table.status.revoked}</span>
                         ) : (
                           <span className="inline-flex px-2 py-1 text-xs rounded-full bg-[#00C9CE]/10 text-[#00C9CE]">{TEXTS.exports.table.status.active}</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2.5">
                         <div className="flex gap-2">
                           {exp.status === 'READY' && !exp.deleted_at && (
                             <>

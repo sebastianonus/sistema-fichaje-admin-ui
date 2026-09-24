@@ -83,13 +83,13 @@ export function Ajustes() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="px-4 py-5 md:px-6 md:py-6 space-y-4">
       <div>
         <h1>{TEXTS.ajustes.title}</h1>
         <p className="text-[#666666] mt-1">{TEXTS.ajustes.subtitle}</p>
       </div>
 
-      <section className="bg-white border border-[#e5e5e5] rounded-lg p-6 space-y-3">
+      <section className="bg-white border border-[#e5e5e5] rounded-lg p-4 space-y-2.5">
         <div className="flex items-center gap-2 text-[#000935]">
           <Server className="w-5 h-5" />
           <h3>{TEXTS.ajustes.connection.title}</h3>
@@ -98,7 +98,7 @@ export function Ajustes() {
         <p className="text-sm text-[#666666]">{TEXTS.ajustes.connection.modeLabel}: {authMode === 'token-env' ? TEXTS.ajustes.connection.modeToken : TEXTS.ajustes.connection.modeSession}</p>
       </section>
 
-      <section className="bg-white border border-[#e5e5e5] rounded-lg p-6 space-y-4">
+      <section className="bg-white border border-[#e5e5e5] rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-[#000935]">
             <CheckCircle2 className="w-5 h-5" />
@@ -124,7 +124,7 @@ export function Ajustes() {
       </section>
 
       {authMode === 'session' && (
-        <section className="bg-white border border-[#e5e5e5] rounded-lg p-6 space-y-4">
+        <section className="bg-white border border-[#e5e5e5] rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 text-[#000935]">
             <Shield className="w-5 h-5" />
             <h3>{TEXTS.ajustes.password.title}</h3>
