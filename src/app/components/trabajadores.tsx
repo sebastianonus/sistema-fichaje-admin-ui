@@ -3,6 +3,7 @@ import { Plus, Filter, X, Search, Calendar, Users } from 'lucide-react';
 import { CreateWorkerModal } from '@/app/components/create-worker-modal';
 import { TEXTS } from '@/constants/texts';
 import { getWorkers, sendWorkerOnboardingMessages } from '@/lib/api';
+import { getIncidentView } from '@/lib/incident-view';
 import type { WorkerSummary } from '@/lib/types';
 import type { WorkersPreset } from '@/app/App';
 
@@ -60,6 +61,7 @@ function buildFallbackOnboardingMessage(item: PreparedCredential) {
   if (item.status.endsWith('FAILED')) return '';
   if (!item.temp_password) return item.message?.trim() || '';
   const workerPortalLink = buildWorkerPortalPrefillUrl(item.email, item.temp_password);
+  const workerPortalUrl = buildWorkerPortalUrl();
   const deadlineHint = item.password_reset_deadline
     ? ` Debes cambiarla antes de ${new Date(item.password_reset_deadline).toLocaleString('es-ES')}.`
     : ' Debes cambiarla en tu primer acceso y dentro de un plazo de 7 dias.';
@@ -69,11 +71,13 @@ function buildFallbackOnboardingMessage(item: PreparedCredential) {
     item.email ? `Usuario: ${item.email}` : '',
     `Contrasena inicial: ${item.temp_password}`,
     deadlineHint.trim(),
-    workerPortalLink ? `Acceso a la app: ${workerPortalLink}` : '',
+    workerPortalUrl ? `Acceso a la app: ${workerPortalUrl}` : '',
+    workerPortalLink ? `Acceso rapido (autocompleta usuario y contrasena): ${workerPortalLink}` : '',
+    workerPortalUrl ? `Si el acceso rapido no funciona, abre este enlace y entra manualmente: ${workerPortalUrl}` : '',
     'Para guardarla en tu telefono: iPhone (Safari o Chrome): Compartir -> Anadir a pantalla de inicio. Android (Chrome): menu de 3 puntos -> Instalar app / Anadir a pantalla principal -> Instalar/Anadir.',
     'Si necesitas ayuda, contacta con administracion.',
   ].filter(Boolean);
-  return parts.join(' ');
+  return parts.join('\n');
 }
 
 function ensureWhatsappUrlWithMessage(url: string | null | undefined, message: string) {
@@ -94,14 +98,29 @@ function buildWorkerPortalPrefillUrl(email: string | null | undefined, password:
   const pass = (password || '').trim();
   if (!user || !pass) return null;
 
+  const base = buildWorkerPortalUrl();
+  if (!base) return null;
+
+  try {
+    const url = new URL(base);
+    url.searchParams.set('email', user);
+    url.searchParams.set('password', pass);
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function buildWorkerPortalUrl() {
   const explicitBase = (import.meta.env.VITE_WORKER_PORTAL_URL as string | undefined)?.trim();
   const fallbackBase = `${window.location.origin}/worker`;
   const base = explicitBase || fallbackBase;
 
   try {
     const url = new URL(base);
-    url.searchParams.set('email', user);
-    url.searchParams.set('password', pass);
+    // Keep a clean URL for manual access (no accidental query params from env).
+    url.search = '';
+    url.hash = '';
     return url.toString();
   } catch {
     return null;
@@ -621,10 +640,18 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                         {worker.open_incident ? (
                           <div className="flex flex-col">
                             <span className="inline-flex px-2 py-1 text-xs rounded-full bg-[#fef2f2] text-[#dc2626]">
-                              {TEXTS.trabajadores.incidents.badge}
+                              {getIncidentView({
+                                incident_type: worker.open_incident.incident_type,
+                                status: 'OPEN',
+                                detected_at: worker.open_incident.detected_at,
+                              }).shortTitle}
                             </span>
                             <span className="text-xs text-[#999999] mt-1">
-                              {TEXTS.trabajadores.incidents.longOpenShift}
+                              {getIncidentView({
+                                incident_type: worker.open_incident.incident_type,
+                                status: 'OPEN',
+                                detected_at: worker.open_incident.detected_at,
+                              }).recommendedAction}
                             </span>
                           </div>
                         ) : TEXTS.trabajadores.table.noEvent}

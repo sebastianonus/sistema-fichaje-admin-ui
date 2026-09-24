@@ -8,7 +8,7 @@ import { Exports } from '@/app/components/exports';
 import { Ajustes } from '@/app/components/ajustes';
 import { Login } from '@/app/components/login';
 import { TEXTS } from '@/constants/texts';
-import { ensureRole, getDevAutoAdminCredentials, hasStaticAdminToken, signInWithRole, signOutAdmin, supabase } from '@/lib/supabase';
+import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
 
 export type Page = 'dashboard' | 'trabajadores' | 'incidencias' | 'workerDetail' | 'exports' | 'ajustes';
 export type WorkersPreset = {
@@ -17,28 +17,52 @@ export type WorkersPreset = {
   token: number;
 } | null;
 
+type AppHistoryState = {
+  onusApp: true;
+  page: Page;
+  workerId?: string | null;
+  incidentId?: string | null;
+};
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [workersPreset, setWorkersPreset] = useState<WorkersPreset>(null);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  const applyHistoryState = (state: AppHistoryState | null | undefined) => {
+    if (!state?.onusApp) return;
+    const nextPage = state.page === 'workerDetail' && !state.workerId ? 'trabajadores' : state.page;
+    setCurrentPage(nextPage);
+    setSelectedWorkerId(state.workerId ?? null);
+    setSelectedIncidentId(state.incidentId ?? null);
+  };
+
+  const navigateTo = (
+    page: Page,
+    options?: { workerId?: string | null; incidentId?: string | null; replace?: boolean },
+  ) => {
+    const nextPage = page === 'workerDetail' && !options?.workerId ? 'trabajadores' : page;
+    const state: AppHistoryState = {
+      onusApp: true,
+      page: nextPage,
+      workerId: options?.workerId ?? null,
+      incidentId: options?.incidentId ?? null,
+    };
+
+    if (options?.replace) {
+      window.history.replaceState(state, '', window.location.href);
+    } else {
+      window.history.pushState(state, '', window.location.href);
+    }
+
+    applyHistoryState(state);
+  };
+
   useEffect(() => {
     async function boot() {
-      const tryDevAutoLogin = async () => {
-        const credentials = getDevAutoAdminCredentials();
-        if (!credentials) return false;
-
-        try {
-          await signOutAdmin();
-          await signInWithRole(credentials.email, credentials.password, 'admin');
-          return true;
-        } catch {
-          return false;
-        }
-      };
-
       if (hasStaticAdminToken()) {
         setIsAuthenticated(true);
         setAuthReady(true);
@@ -53,8 +77,7 @@ export default function App() {
 
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        const authed = await tryDevAutoLogin();
-        setIsAuthenticated(authed);
+        setIsAuthenticated(false);
         setAuthReady(true);
         return;
       }
@@ -63,8 +86,8 @@ export default function App() {
         await ensureRole('admin');
         setIsAuthenticated(true);
       } catch {
-        const authed = await tryDevAutoLogin();
-        setIsAuthenticated(authed);
+        await signOutAdmin();
+        setIsAuthenticated(false);
       }
       setAuthReady(true);
     }
@@ -72,10 +95,28 @@ export default function App() {
     boot();
   }, []);
 
+  useEffect(() => {
+    const initialState = window.history.state as AppHistoryState | null;
+    if (!initialState?.onusApp) {
+      window.history.replaceState(
+        { onusApp: true, page: currentPage, workerId: selectedWorkerId, incidentId: selectedIncidentId } satisfies AppHistoryState,
+        '',
+        window.location.href,
+      );
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      applyHistoryState(event.state as AppHistoryState | null);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleLogout = async () => {
     await signOutAdmin();
     setIsAuthenticated(false);
-    setCurrentPage('dashboard');
+    navigateTo('dashboard', { replace: true });
   };
 
   const handleOpenWorkersFiltered = (preset: { isActive?: 'active' | 'inactive'; clockedIn?: boolean }) => {
@@ -83,12 +124,11 @@ export default function App() {
       ...preset,
       token: Date.now(),
     });
-    setCurrentPage('trabajadores');
+    navigateTo('trabajadores');
   };
 
-  const handleOpenWorkerDetail = (workerId: string) => {
-    setSelectedWorkerId(workerId);
-    setCurrentPage('workerDetail');
+  const handleOpenWorkerDetail = (workerId: string, incidentId?: string) => {
+    navigateTo('workerDetail', { workerId, incidentId: incidentId ?? null });
   };
 
   if (!authReady) {
@@ -103,14 +143,14 @@ export default function App() {
     <div className="flex h-screen bg-white">
       <Sidebar
         currentPage={currentPage}
-        onNavigate={setCurrentPage}
+        onNavigate={navigateTo}
         showLogout={!hasStaticAdminToken()}
         onLogout={handleLogout}
       />
       <main className="flex-1 overflow-auto pt-16 lg:pt-0">
         {currentPage === 'dashboard' && (
           <Dashboard
-            onNavigate={setCurrentPage}
+            onNavigate={navigateTo}
             onOpenWorkersFiltered={handleOpenWorkersFiltered}
           />
         )}
@@ -126,7 +166,8 @@ export default function App() {
         {currentPage === 'workerDetail' && selectedWorkerId && (
           <WorkerDetailPage
             workerId={selectedWorkerId}
-            onBack={() => setCurrentPage('trabajadores')}
+            focusIncidentId={selectedIncidentId}
+            onBack={() => navigateTo('trabajadores')}
           />
         )}
         {currentPage === 'exports' && <Exports />}

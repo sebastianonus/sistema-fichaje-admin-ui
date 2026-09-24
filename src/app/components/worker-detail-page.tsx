@@ -1,14 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, AlertTriangle, MapPin } from 'lucide-react';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
 import { TEXTS } from '@/constants/texts';
-import { activateWorker, changeWorkerPassword, correctWorkerEvent, deactivateWorker, getWorker, updateWorker } from '@/lib/api';
-import { buildEffectiveTimeEvents } from '@/lib/time-events';
+import { activateWorker, addWorkerEvent, changeWorkerPassword, correctWorkerEvent, deactivateWorker, deleteWorkerEvent, getWorker, resolveIncident, updateWorker } from '@/lib/api';
+import {
+  DEFAULT_INCIDENT_CORRECTION_NOTE,
+  addNetWorkdayTarget,
+  formatDurationBetween,
+  formatElapsedSince,
+  formatIncidentDateTime,
+  getIncidentView,
+} from '@/lib/incident-view';
+import { buildEffectiveTimeEvents, summarizeWorkdayEvents } from '@/lib/time-events';
 import type { WorkerDetail } from '@/lib/types';
 
 interface WorkerDetailPageProps {
   workerId: string;
+  focusIncidentId?: string | null;
   onBack: () => void;
 }
 
@@ -45,48 +54,44 @@ function formatEventTime(value: string) {
   });
 }
 
-function closedMinutesFromEvents(events: WorkerDetail['time_events']) {
+function formatEventDateTime(value: string) {
+  return new Date(value).toLocaleString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function eventLabel(type: string) {
+  if (type === 'CLOCK_IN') return 'Entrada';
+  if (type === 'CLOCK_OUT') return 'Salida';
+  if (type === 'BREAK_START') return 'Inicio pausa';
+  if (type === 'BREAK_END') return 'Fin pausa';
+  if (type === 'CORRECTION') return 'Correccion';
+  return type;
+}
+
+function suggestedEventToAdd(events: Array<{ event_type: string; happened_at: string }>) {
   const asc = [...events].sort(
     (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
   );
-  let openIn: WorkerDetail['time_events'][number] | null = null;
-  let breakStart: number | null = null;
-  let breakAccum = 0;
-  let total = 0;
-  for (const ev of asc) {
-    if (ev.event_type === 'CLOCK_IN') {
-      openIn = ev;
-      breakStart = null;
-      breakAccum = 0;
-      continue;
-    }
-    if (ev.event_type === 'BREAK_START' && openIn && breakStart === null) {
-      breakStart = new Date(ev.happened_at).getTime();
-      continue;
-    }
-    if (ev.event_type === 'BREAK_END' && openIn && breakStart !== null) {
-      const breakEnd = new Date(ev.happened_at).getTime();
-      breakAccum += Math.max(0, breakEnd - breakStart);
-      breakStart = null;
-      continue;
-    }
-    if (ev.event_type === 'CLOCK_OUT' && openIn) {
-      const outMs = new Date(ev.happened_at).getTime();
-      if (breakStart !== null) breakAccum += Math.max(0, outMs - breakStart);
-      const minutes = Math.max(
-        0,
-        Math.round((outMs - new Date(openIn.happened_at).getTime() - breakAccum) / 60000),
-      );
-      total += minutes;
-      openIn = null;
-      breakStart = null;
-      breakAccum = 0;
-    }
+  let openBreakStart: string | null = null;
+  let lastEventAt = asc[asc.length - 1]?.happened_at ?? new Date().toISOString();
+
+  for (const event of asc) {
+    if (event.event_type === 'BREAK_START') openBreakStart = event.happened_at;
+    if (event.event_type === 'BREAK_END') openBreakStart = null;
+    if (event.event_type === 'CLOCK_OUT') lastEventAt = event.happened_at;
   }
-  return total;
+
+  if (openBreakStart) return { type: 'BREAK_END' as const, happened_at: lastEventAt };
+  return { type: 'BREAK_END' as const, happened_at: lastEventAt };
 }
 
-export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
+export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDetailPageProps) {
   const [worker, setWorker] = useState<WorkerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,10 +113,20 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState('');
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [showDeleteEventModal, setShowDeleteEventModal] = useState(false);
   const [selectedCorrectionEventId, setSelectedCorrectionEventId] = useState<string | null>(null);
+  const [selectedDeleteEventId, setSelectedDeleteEventId] = useState<string | null>(null);
+  const [selectedCorrectionClockInAt, setSelectedCorrectionClockInAt] = useState<string | null>(null);
+  const [selectedCorrectionTargetOutAt, setSelectedCorrectionTargetOutAt] = useState<string | null>(null);
   const [correctionType, setCorrectionType] = useState<'CLOCK_IN' | 'CLOCK_OUT' | 'BREAK_START' | 'BREAK_END'>('CLOCK_IN');
   const [correctionAt, setCorrectionAt] = useState('');
   const [correctionNote, setCorrectionNote] = useState('');
+  const [newEventType, setNewEventType] = useState<'CLOCK_IN' | 'CLOCK_OUT' | 'BREAK_START' | 'BREAK_END'>('BREAK_END');
+  const [newEventAt, setNewEventAt] = useState('');
+  const [newEventNote, setNewEventNote] = useState('');
+  const [deleteEventNote, setDeleteEventNote] = useState('');
+  const incidentsSectionRef = useRef<HTMLDivElement | null>(null);
 
   const fetchWorker = async () => {
     try {
@@ -132,6 +147,13 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   useEffect(() => {
     fetchWorker();
   }, [workerId]);
+
+  useEffect(() => {
+    if (!worker || !focusIncidentId) return;
+    window.setTimeout(() => {
+      incidentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }, [worker, focusIncidentId]);
 
   const effectiveEvents = useMemo(
     () => buildEffectiveTimeEvents(worker?.time_events ?? []),
@@ -165,7 +187,7 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
       key,
       label: new Date(`${key}T00:00:00`).toLocaleDateString('es-ES'),
       events: dayEvents,
-      totalClosedMinutes: closedMinutesFromEvents(dayEvents),
+      summary: summarizeWorkdayEvents(dayEvents),
     }));
   }, [filteredEvents]);
 
@@ -173,11 +195,54 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
     const out = new Map<string, NonNullable<WorkerDetail['incident_history']>[number]>();
     for (const incident of worker?.incident_history ?? []) {
       if (!incident.related_event_id) continue;
-      if (out.has(incident.related_event_id)) continue;
+      const current = out.get(incident.related_event_id);
+      if (current?.status === 'OPEN') continue;
+      if (current && incident.status !== 'OPEN') continue;
       out.set(incident.related_event_id, incident);
     }
     return out;
   }, [worker?.incident_history]);
+
+  const clockInByIncidentEventId = useMemo(() => {
+    const out = new Map<string, (typeof effectiveEvents)[number]>();
+    const asc = [...effectiveEvents].sort(
+      (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
+    );
+    let lastClockIn: (typeof effectiveEvents)[number] | null = null;
+
+    for (const event of asc) {
+      if (event.event_type === 'CLOCK_IN') lastClockIn = event;
+      if (event.event_type === 'CLOCK_OUT') {
+        if (lastClockIn) out.set(event.id, lastClockIn);
+        lastClockIn = null;
+      }
+    }
+
+    for (const event of asc) {
+      if (event.event_type === 'CLOCK_IN') out.set(event.id, event);
+    }
+
+    return out;
+  }, [effectiveEvents]);
+
+  const eventById = useMemo(() => {
+    const out = new Map<string, (typeof effectiveEvents)[number]>();
+    for (const event of effectiveEvents) out.set(event.id, event);
+    return out;
+  }, [effectiveEvents]);
+
+  const incidentClosingOutByClockInId = useMemo(() => {
+    const out = new Map<string, (typeof effectiveEvents)[number]>();
+    for (const event of effectiveEvents) {
+      if (event.event_type !== 'CLOCK_OUT' || !event.related_event_id) continue;
+      const related = eventById.get(event.related_event_id);
+      if (related?.event_type === 'CLOCK_IN') out.set(event.related_event_id, event);
+    }
+    return out;
+  }, [effectiveEvents, eventById]);
+
+  const targetOutForClockIn = (clockInAt: string | null | undefined) =>
+    clockInAt ? addNetWorkdayTarget(clockInAt, effectiveEvents) : null;
 
   const handleDeactivate = async () => {
     if (!worker) return;
@@ -295,25 +360,64 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
   };
 
   const openCorrectionModal = (event: (typeof filteredEvents)[number]) => {
+    const incident = incidentByRelatedEventId.get(event.id);
+    const incidentClockIn = incident ? clockInByIncidentEventId.get(event.id) : null;
+    const targetOut = incidentClockIn ? targetOutForClockIn(incidentClockIn.happened_at) : null;
+
     setSelectedCorrectionEventId(event.id);
-    setCorrectionType(
-      event.event_type === 'CLOCK_OUT'
-        ? 'CLOCK_OUT'
-        : event.event_type === 'BREAK_START'
-          ? 'BREAK_START'
-          : event.event_type === 'BREAK_END'
-            ? 'BREAK_END'
-            : 'CLOCK_IN',
-    );
-    setCorrectionAt(toDateTimeLocalValue(event.happened_at));
-    setCorrectionNote('');
+    setSelectedCorrectionClockInAt(incidentClockIn?.happened_at ?? null);
+    setSelectedCorrectionTargetOutAt(targetOut);
+    if (incident && incidentClockIn) {
+      setCorrectionType('CLOCK_OUT');
+      setCorrectionAt(toDateTimeLocalValue(targetOut ?? event.happened_at));
+    } else {
+      setCorrectionType(
+        event.event_type === 'CLOCK_OUT'
+          ? 'CLOCK_OUT'
+          : event.event_type === 'BREAK_START'
+            ? 'BREAK_START'
+            : event.event_type === 'BREAK_END'
+              ? 'BREAK_END'
+              : 'CLOCK_IN',
+      );
+      setCorrectionAt(toDateTimeLocalValue(event.happened_at));
+    }
+    setCorrectionNote(DEFAULT_INCIDENT_CORRECTION_NOTE);
     setShowCorrectionModal(true);
   };
 
   const closeCorrectionModal = () => {
     setShowCorrectionModal(false);
     setSelectedCorrectionEventId(null);
+    setSelectedCorrectionClockInAt(null);
+    setSelectedCorrectionTargetOutAt(null);
     setCorrectionNote('');
+  };
+
+  const openAddEventModal = (events?: Array<{ event_type: string; happened_at: string }>) => {
+    const suggestion = suggestedEventToAdd(events?.length ? events : effectiveEvents);
+    setNewEventType(suggestion.type);
+    setNewEventAt(toDateTimeLocalValue(suggestion.happened_at));
+    setNewEventNote('Evento anadido por administracion para completar la jornada.');
+    setShowAddEventModal(true);
+  };
+
+  const closeAddEventModal = () => {
+    setShowAddEventModal(false);
+    setNewEventAt('');
+    setNewEventNote('');
+  };
+
+  const openDeleteEventModal = (event: (typeof filteredEvents)[number]) => {
+    setSelectedDeleteEventId(event.id);
+    setDeleteEventNote('Evento eliminado por administracion tras revision.');
+    setShowDeleteEventModal(true);
+  };
+
+  const closeDeleteEventModal = () => {
+    setShowDeleteEventModal(false);
+    setSelectedDeleteEventId(null);
+    setDeleteEventNote('');
   };
 
   const handleCorrectionSave = async () => {
@@ -328,6 +432,59 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
         note: correctionNote.trim(),
       });
       closeCorrectionModal();
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddEventSave = async () => {
+    if (!worker || !newEventAt.trim() || !newEventNote.trim()) return;
+    try {
+      setSaving(true);
+      setError(null);
+      await addWorkerEvent({
+        worker_id: worker.id,
+        event_type: newEventType,
+        happened_at: new Date(newEventAt).toISOString(),
+        note: newEventNote.trim(),
+      });
+      closeAddEventModal();
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteEventSave = async () => {
+    if (!selectedDeleteEventId || !deleteEventNote.trim()) return;
+    try {
+      setSaving(true);
+      setError(null);
+      await deleteWorkerEvent({
+        related_event_id: selectedDeleteEventId,
+        note: deleteEventNote.trim(),
+      });
+      closeDeleteEventModal();
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResolveIncident = async (incidentId: string) => {
+    try {
+      setSaving(true);
+      setError(null);
+      setInfo(null);
+      await resolveIncident(incidentId, 'Incidencia revisada y fichaje corregido');
+      setInfo(TEXTS.workerDetail.incidents.resolvedSuccess);
       await fetchWorker();
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
@@ -517,18 +674,73 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
               <WorkdayTimeline events={effectiveEvents} title={TEXTS.workerPortal.sections.timelineTitle} />
             </div>
 
-            <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+            <div ref={incidentsSectionRef} className="bg-white border border-[#e5e5e5] rounded-lg p-6 scroll-mt-20">
               <h3 className="mb-4">{TEXTS.workerDetail.sections.incidents}</h3>
               {worker.open_incidents && worker.open_incidents.length > 0 ? (
                 <div className="space-y-2">
-                  {worker.open_incidents.map((incident) => (
-                    <div key={incident.id} className="p-3 rounded-lg bg-[#fef2f2] border border-[#fecaca]">
-                      <div className="font-medium text-[#991b1b]">{TEXTS.workerDetail.incidents.longOpenShift}</div>
-                      <div className="text-sm text-[#7f1d1d] mt-1">
-                        {TEXTS.workerDetail.incidents.detectedAt} {new Date(incident.detected_at).toLocaleString('es-ES')}
+                  {worker.open_incidents.map((incident) => {
+                    const historyIncident = worker.incident_history?.find((row) => row.id === incident.id);
+                    const relatedEvent = historyIncident?.related_event_id ? eventById.get(historyIncident.related_event_id) : null;
+                    const incidentClockIn = relatedEvent ? clockInByIncidentEventId.get(relatedEvent.id) : null;
+                    const view = getIncidentView({
+                      incident_type: incident.incident_type,
+                      status: incident.status,
+                      detected_at: incident.detected_at,
+                      related_event: relatedEvent,
+                      clock_in_at: incidentClockIn?.happened_at ?? null,
+                      timeline_events: effectiveEvents,
+                      note: incident.note,
+                    });
+
+                    return (
+                      <div
+                        key={incident.id}
+                        className={`p-4 rounded-lg bg-[#fef2f2] border ${focusIncidentId === incident.id ? 'border-[#dc2626] ring-2 ring-[#fecaca]' : 'border-[#fecaca]'}`}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold text-[#991b1b]">{view.title}</div>
+                            <div className="text-sm text-[#7f1d1d] mt-1">{view.description}</div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {relatedEvent && (
+                              <button
+                                type="button"
+                                onClick={() => openCorrectionModal(relatedEvent)}
+                                disabled={saving}
+                                className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+                              >
+                                {view.correctionButton}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 mt-3 text-sm">
+                          <div>
+                            <div className="text-[#7f1d1d]">{view.primaryTimeLabel}</div>
+                            <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.clockInAt)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[#7f1d1d]">{view.targetTimeLabel}</div>
+                            <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.suggestedOutAt)}</div>
+                            <div className="text-xs text-[#7f1d1d] mt-1">{view.targetHelp}</div>
+                          </div>
+                          <div>
+                            <div className="text-[#7f1d1d]">{view.netWorkedLabel}</div>
+                            <div className="font-semibold text-[#000935]">{view.netWorkedValue}</div>
+                          </div>
+                          <div>
+                            <div className="text-[#7f1d1d]">{view.breakLabel}</div>
+                            <div className="font-semibold text-[#000935]">{view.breakValue}</div>
+                          </div>
+                          <div>
+                            <div className="text-[#7f1d1d]">{view.actionLabel}</div>
+                            <div className="font-semibold text-[#dc2626]">{view.correctionButton}</div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-[#666666]">{TEXTS.workerDetail.incidents.empty}</p>
@@ -536,6 +748,17 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
             </div>
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3>{TEXTS.workerDetail.sections.timeEvents}</h3>
+                <button
+                  type="button"
+                  onClick={() => openAddEventModal(filteredEvents)}
+                  disabled={saving}
+                  className="px-3 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+                >
+                  Anadir evento
+                </button>
+              </div>
               <div className="flex flex-wrap items-end gap-3 mb-4">
                 <div>
                   <label className="block text-sm mb-1">{TEXTS.workerDetail.filters.fromDate}</label>
@@ -580,43 +803,135 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                       <summary className="list-none cursor-pointer p-3 flex items-center justify-between text-xs font-semibold">
                         <span className="text-[#0f766e]">{TEXTS.workerPortal.status.journeyLabel} {group.label}</span>
                         <span className="text-[#475569]">
-                          {TEXTS.workerPortal.status.totalLabel} {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : TEXTS.workerPortal.status.noClosedSegments}
+                          {TEXTS.workerPortal.status.totalLabel}{' '}
+                          {group.summary.hasIncompleteSegment
+                            ? `Pendiente (${group.summary.totalClosedMinutes > 0 ? formatMinutes(group.summary.totalClosedMinutes) : TEXTS.workerPortal.status.noClosedSegments} cerrado)`
+                            : group.summary.totalClosedMinutes > 0
+                              ? formatMinutes(group.summary.totalClosedMinutes)
+                              : TEXTS.workerPortal.status.noClosedSegments}
                         </span>
                       </summary>
                       <div className="px-3 pb-3 space-y-2">
+                        {group.summary.hasIncompleteSegment && (
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => openAddEventModal(group.events)}
+                              disabled={saving}
+                              className="text-sm text-[#00C9CE] hover:underline disabled:opacity-50 disabled:no-underline"
+                            >
+                              Anadir evento que falta
+                            </button>
+                          </div>
+                        )}
                         {group.events.map((event) => {
                           const incident = incidentByRelatedEventId.get(event.id);
+                          const incidentClockIn = incident ? clockInByIncidentEventId.get(event.id) : null;
+                          const incidentTargetOut = incidentClockIn ? targetOutForClockIn(incidentClockIn.happened_at) : null;
+                          const incidentClosingOut = incident ? incidentClosingOutByClockInId.get(event.id) : null;
+                          const eventIncidentView = incident ? getIncidentView({
+                            incident_type: incident.incident_type,
+                            status: incident.status,
+                            detected_at: incident.detected_at,
+                            related_event: event,
+                            clock_in_at: incidentClockIn?.happened_at ?? null,
+                            timeline_events: effectiveEvents,
+                            note: incident.note,
+                          }) : null;
+                          const closesIncidentFrom = event.related_event_id ? eventById.get(event.related_event_id) : null;
+                          const incidentIsOpen = incident?.status === 'OPEN';
+                          const incidentIsClosed = !!incident && (incident.status !== 'OPEN' || !!incidentClosingOut);
+                          const eventClosesIncident = event.event_type === 'CLOCK_OUT' && closesIncidentFrom?.event_type === 'CLOCK_IN';
+                          const eventNeedsMissingClockOut = incidentIsOpen && event.event_type === 'CLOCK_IN';
+                          const canCorrectEvent =
+                            (event.event_type === 'CLOCK_IN' ||
+                              event.event_type === 'CLOCK_OUT' ||
+                              event.event_type === 'BREAK_START' ||
+                              event.event_type === 'BREAK_END') &&
+                            !saving;
                           return (
                           <div key={event.id} className="flex flex-wrap justify-between items-start gap-3 p-3 bg-[#f9f9f9] rounded-lg">
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <div className="font-medium text-[#000935]">{event.event_type}</div>
-                                {incident && (
-                                  <span className={`inline-flex px-2 py-0.5 text-[11px] rounded-full ${incident.has_correction ? 'bg-[#ecfeff] text-[#0f766e]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>
-                                    {incident.has_correction
-                                      ? TEXTS.workerDetail.correction.incidentCorrectedBadge
+                                <div className="font-medium text-[#000935]">{eventLabel(event.event_type)}</div>
+                                {incident && !incidentIsClosed && (
+                                  <span className={`inline-flex px-2 py-0.5 text-[11px] rounded-full ${incidentIsClosed ? 'bg-[#ecfeff] text-[#0f766e]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>
+                                    {incidentIsClosed
+                                      ? incident.has_correction
+                                        ? TEXTS.workerDetail.correction.incidentCorrectedBadge
+                                        : TEXTS.workerDetail.correction.incidentResolvedBadge
                                       : TEXTS.workerDetail.correction.incidentDetectedBadge}
                                   </span>
                                 )}
-                                {event.corrected && (
+                                {event.corrected && !incidentIsOpen && (
                                   <span className="inline-flex px-2 py-0.5 text-[11px] rounded-full bg-[#00C9CE]/10 text-[#0f766e]">
                                     {TEXTS.workerDetail.correction.correctedBadge}
                                   </span>
                                 )}
+                                {eventClosesIncident && (
+                                  <span className="inline-flex px-2 py-0.5 text-[11px] rounded-full bg-[#ecfeff] text-[#0f766e]">
+                                    {TEXTS.workerDetail.correction.incidentCloseOutBadge}
+                                  </span>
+                                )}
                               </div>
-                              {event.corrected && (
+                              {event.corrected && !incidentIsOpen && (
                                 <div className="text-sm text-[#666666] mt-1 break-words">
                                   {TEXTS.workerDetail.correction.originalLabel}{' '}
                                   {event.original_event_type} {formatEventTime(event.original_happened_at ?? event.happened_at)}
                                 </div>
                               )}
-                              {event.correction_note && (
+                              {event.correction_note && !incidentIsOpen && (
                                 <div className="text-sm text-[#666666] mt-1 break-words">
                                   {TEXTS.workerDetail.correction.reasonLabel} {event.correction_note}
                                 </div>
                               )}
                               {event.note && !event.correction_note && (
                                 <div className="text-sm text-[#666666] mt-1 break-words">{event.note}</div>
+                              )}
+                              {eventClosesIncident && closesIncidentFrom && (
+                                <div className="text-sm text-[#666666] mt-1 break-words">
+                                  {TEXTS.workerDetail.correction.closesIncidentFromLabel}{' '}
+                                  <span className="font-semibold text-[#000935]">{formatEventDateTime(closesIncidentFrom.happened_at)}</span>
+                                </div>
+                              )}
+                              {incident && (
+                                <div className={`mt-3 rounded-lg border p-3 ${incidentIsClosed ? 'border-[#99f6e4] bg-[#f0fdfa]' : 'border-[#fecaca] bg-[#fff7f7]'}`}>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                      <div className="text-[#666666]">{TEXTS.workerDetail.correction.incidentStartLabel}</div>
+                                      <div className="font-semibold text-[#000935]">
+                                        {incidentClockIn ? formatEventDateTime(incidentClockIn.happened_at) : TEXTS.common.noData}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-[#666666]">{eventIncidentView?.targetTimeLabel ?? TEXTS.workerDetail.correction.incidentTargetOutLabel}</div>
+                                      <div className="font-semibold text-[#000935]">
+                                        {incidentTargetOut ? formatEventDateTime(incidentTargetOut) : TEXTS.common.noData}
+                                      </div>
+                                      {eventIncidentView?.targetHelp && (
+                                        <div className="text-xs text-[#666666] mt-1">{eventIncidentView.targetHelp}</div>
+                                      )}
+                                    </div>
+                                    {!incidentIsOpen && (
+                                      <div>
+                                        <div className="text-[#666666]">{TEXTS.workerDetail.correction.incidentStatusLabel}</div>
+                                        <div className={incidentIsClosed ? 'font-semibold text-[#0f766e]' : 'font-semibold text-[#dc2626]'}>
+                                          {incidentIsClosed ? TEXTS.workerDetail.correction.resolvedIncident : TEXTS.workerDetail.correction.incidentDetectedBadge}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="text-[#666666]">{TEXTS.workerDetail.correction.incidentDetectedAtLabel}</div>
+                                      <div className="font-semibold text-[#000935]">{formatEventDateTime(incident.detected_at)}</div>
+                                    </div>
+                                    {incident.resolved_at && (
+                                      <div className="sm:col-span-2">
+                                        <div className="text-[#666666]">{TEXTS.workerDetail.correction.incidentResolvedAtLabel}</div>
+                                        <div className="font-semibold text-[#000935]">{formatEventDateTime(incident.resolved_at)}</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               )}
                               <div className="text-sm text-[#666666] mt-1 break-words">
                                 {TEXTS.workerDetail.location.label}{' '}
@@ -649,14 +964,24 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
                                 </a>
                               )}
                               {(event.event_type === 'CLOCK_IN' || event.event_type === 'CLOCK_OUT' || event.event_type === 'BREAK_START' || event.event_type === 'BREAK_END') && (
-                                <button
-                                  type="button"
-                                  onClick={() => openCorrectionModal(event)}
-                                  disabled={saving || event.corrected}
-                                  className="text-sm text-[#00C9CE] hover:underline disabled:opacity-50 disabled:no-underline"
-                                >
-                                  {event.corrected ? TEXTS.workerDetail.correction.alreadyCorrected : TEXTS.workerDetail.correction.action}
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => openCorrectionModal(event)}
+                                    disabled={!canCorrectEvent}
+                                    className="text-sm text-[#00C9CE] hover:underline disabled:opacity-50 disabled:no-underline"
+                                  >
+                                    {eventNeedsMissingClockOut ? 'Registrar salida' : TEXTS.workerDetail.correction.action}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => openDeleteEventModal(event)}
+                                    disabled={saving}
+                                    className="text-sm text-[#dc2626] hover:underline disabled:opacity-50 disabled:no-underline"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </>
                               )}
                             </div>
                           </div>
@@ -733,11 +1058,128 @@ export function WorkerDetailPage({ workerId, onBack }: WorkerDetailPageProps) {
         </div>
       )}
 
+      {showAddEventModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg p-6">
+            <h3 className="mb-2">Anadir evento</h3>
+            <p className="text-sm text-[#666666] mb-4">
+              Se registra un nuevo fichaje administrativo auditado. Usalo solo para completar un evento que falta.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-2">Tipo de evento</label>
+                <select
+                  value={newEventType}
+                  onChange={(e) => setNewEventType(e.target.value as 'CLOCK_IN' | 'CLOCK_OUT' | 'BREAK_START' | 'BREAK_END')}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                >
+                  <option value="CLOCK_IN">Entrada</option>
+                  <option value="BREAK_START">Inicio pausa</option>
+                  <option value="BREAK_END">Fin pausa</option>
+                  <option value="CLOCK_OUT">Salida</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-2">Hora del evento</label>
+                <input
+                  type="datetime-local"
+                  value={newEventAt}
+                  onChange={(e) => setNewEventAt(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block mb-2">Motivo</label>
+                <textarea
+                  value={newEventNote}
+                  onChange={(e) => setNewEventNote(e.target.value)}
+                  placeholder="Ej. Fin de pausa omitido por error y validado por administracion"
+                  rows={4}
+                  className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg resize-none"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <button
+                onClick={handleAddEventSave}
+                disabled={saving || !newEventAt.trim() || !newEventNote.trim()}
+                className="px-4 py-2 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
+              >
+                Guardar evento
+              </button>
+              <button
+                onClick={closeAddEventModal}
+                className="px-4 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5]"
+              >
+                {TEXTS.workerDetail.correction.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteEventModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg p-6">
+            <h3 className="mb-2">Eliminar evento</h3>
+            <p className="text-sm text-[#666666] mb-4">
+              El evento se retirara de la jornada efectiva y quedara auditado como correccion administrativa.
+            </p>
+            <div>
+              <label className="block mb-2">Motivo</label>
+              <textarea
+                value={deleteEventNote}
+                onChange={(e) => setDeleteEventNote(e.target.value)}
+                placeholder="Ej. Evento duplicado o registrado por error"
+                rows={4}
+                className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg resize-none"
+              />
+            </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <button
+                onClick={handleDeleteEventSave}
+                disabled={saving || !deleteEventNote.trim()}
+                className="px-4 py-2 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] disabled:opacity-50"
+              >
+                Eliminar evento
+              </button>
+              <button
+                onClick={closeDeleteEventModal}
+                className="px-4 py-2 border border-[#e5e5e5] text-[#000935] rounded-lg hover:bg-[#f5f5f5]"
+              >
+                {TEXTS.workerDetail.correction.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCorrectionModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-lg w-full max-w-lg p-6">
             <h3 className="mb-2">{TEXTS.workerDetail.correction.title}</h3>
             <p className="text-sm text-[#666666] mb-4">{TEXTS.workerDetail.correction.description}</p>
+            {(selectedCorrectionClockInAt || selectedCorrectionTargetOutAt) && (
+              <div className="mb-4 rounded-lg border border-[#fecaca] bg-[#fff7f7] p-3">
+                <div className="text-sm font-semibold text-[#991b1b] mb-2">
+                  {TEXTS.workerDetail.correction.modalIncidentContext}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <div className="text-[#666666]">{TEXTS.workerDetail.correction.incidentStartLabel}</div>
+                    <div className="font-semibold text-[#000935]">
+                      {selectedCorrectionClockInAt ? formatEventDateTime(selectedCorrectionClockInAt) : TEXTS.common.noData}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#666666]">{TEXTS.workerDetail.correction.incidentTargetOutLabel}</div>
+                    <div className="font-semibold text-[#000935]">
+                      {selectedCorrectionTargetOutAt ? formatEventDateTime(selectedCorrectionTargetOutAt) : TEXTS.common.noData}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="space-y-4">
               <div>
                 <label className="block mb-2">{TEXTS.workerDetail.correction.eventType}</label>

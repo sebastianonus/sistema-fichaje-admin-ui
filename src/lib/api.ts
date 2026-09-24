@@ -34,17 +34,32 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(TEXTS.api.missingAdminToken);
   }
 
-  const res = await fetch(`${getFunctionsBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers ?? {}),
-    },
-  });
+  const doFetch = async (bearer: string) => {
+    const res = await fetch(`${getFunctionsBaseUrl()}${path}`, {
+      ...init,
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${bearer}`,
+        ...(init?.headers ?? {}),
+      },
+    });
+    const raw = await res.text();
+    const body = raw ? JSON.parse(raw) : {};
+    return { res, body };
+  };
 
-  const raw = await res.text();
-  const body = raw ? JSON.parse(raw) : {};
+  let { res, body } = await doFetch(token);
+
+  // Recover from stale browser session tokens: refresh and retry once.
+  if (res.status === 401) {
+    const refreshedToken = await getSessionAccessToken({ forceRefresh: true });
+    if (refreshedToken) {
+      const retried = await doFetch(refreshedToken);
+      res = retried.res;
+      body = retried.body;
+    }
+  }
+
   if (!res.ok || body?.ok === false) {
     throw new Error(body?.details || body?.error || `HTTP_${res.status}`);
   }
@@ -100,10 +115,25 @@ export async function getIncidentsHistory(filters?: {
   return res.data;
 }
 
+export async function resolveIncident(incidentId: string, note?: string) {
+  const res = await request<ApiEnvelope<{
+    id: string;
+    status: "RESOLVED" | "DISMISSED" | "OPEN";
+    resolved_at?: string | null;
+    resolved_by?: string | null;
+    note?: string | null;
+    noop?: boolean;
+  }>>(`/admin-workers/incidents/${incidentId}/resolve`, {
+    method: "PATCH",
+    body: JSON.stringify({ note }),
+  });
+  return res.data;
+}
+
 export async function createWorker(worker: {
   full_name: string;
   email: string;
-  password: string;
+  password?: string;
   phone_number?: string;
 }) {
   const res = await request<ApiEnvelope<{ worker_id: string; temp_password: string | null }>>("/admin-users", {
@@ -134,6 +164,31 @@ export async function correctWorkerEvent(payload: {
   const res = await request<ApiEnvelope<{ id: string }>>("/correction", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function addWorkerEvent(payload: {
+  worker_id: string;
+  event_type: "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END";
+  happened_at: string;
+  note: string;
+  related_event_id?: string | null;
+}) {
+  const res = await request<ApiEnvelope<{ id: string }>>("/correction", {
+    method: "POST",
+    body: JSON.stringify({ action: "ADD_EVENT", ...payload }),
+  });
+  return res.data;
+}
+
+export async function deleteWorkerEvent(payload: {
+  related_event_id: string;
+  note: string;
+}) {
+  const res = await request<ApiEnvelope<{ id: string }>>("/correction", {
+    method: "POST",
+    body: JSON.stringify({ action: "DELETE_EVENT", ...payload }),
   });
   return res.data;
 }

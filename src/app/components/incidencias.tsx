@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, RefreshCcw } from "lucide-react";
 import { TEXTS } from "@/constants/texts";
 import { correctWorkerEvent, getIncidentsHistory } from "@/lib/api";
+import {
+  DEFAULT_INCIDENT_CORRECTION_NOTE,
+  formatIncidentDateTime,
+  getIncidentView,
+} from "@/lib/incident-view";
 import type { IncidentHistoryItem } from "@/lib/types";
 
 interface IncidenciasProps {
-  onOpenWorkerDetail: (workerId: string) => void;
+  onOpenWorkerDetail: (workerId: string, incidentId?: string) => void;
 }
 
 type StatusFilter = "ALL" | "OPEN" | "RESOLVED" | "DISMISSED";
@@ -27,7 +32,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<StatusFilter>("ALL");
+  const [status, setStatus] = useState<StatusFilter>("OPEN");
   const [search, setSearch] = useState("");
   const [detectedFrom, setDetectedFrom] = useState("");
   const [detectedTo, setDetectedTo] = useState("");
@@ -72,18 +77,18 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
 
   const openCorrection = (incident: IncidentHistoryItem) => {
     if (!incident.related_event) return;
+    const view = getIncidentView({
+      incident_type: incident.incident_type,
+      status: incident.status,
+      related_event: incident.related_event,
+      clock_in_at: incident.clock_in_event?.happened_at ?? null,
+      detected_at: incident.detected_at,
+      note: incident.note,
+    });
     setSelectedIncident(incident);
-    setCorrectionType(
-      incident.related_event.event_type === "CLOCK_OUT"
-        ? "CLOCK_OUT"
-        : incident.related_event.event_type === "BREAK_START"
-          ? "BREAK_START"
-          : incident.related_event.event_type === "BREAK_END"
-            ? "BREAK_END"
-            : "CLOCK_IN",
-    );
-    setCorrectionAt(toDateTimeLocalValue(incident.related_event.happened_at));
-    setCorrectionNote("");
+    setCorrectionType(view.eventToCorrect);
+    setCorrectionAt(toDateTimeLocalValue(view.suggestedOutAt ?? incident.related_event.happened_at));
+    setCorrectionNote(DEFAULT_INCIDENT_CORRECTION_NOTE);
     setInfo(null);
     setError(null);
   };
@@ -106,7 +111,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
         note: correctionNote.trim(),
       });
       closeCorrection();
-      setInfo("Correccion registrada. La incidencia asociada queda trazada como resuelta.");
+      setInfo("Correccion registrada. La incidencia se ha marcado como resuelta.");
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXTS.incidencias.errors.generic);
@@ -201,11 +206,22 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
         <div className="bg-white border border-[#e5e5e5] rounded-lg p-6 text-[#666666]">{TEXTS.incidencias.empty}</div>
       ) : (
         <div className="space-y-3">
-          {filteredItems.map((item) => (
+          {filteredItems.map((item) => {
+            const incidentView = getIncidentView({
+              incident_type: item.incident_type,
+              status: item.status,
+              related_event: item.related_event,
+              clock_in_at: item.clock_in_event?.happened_at ?? null,
+              detected_at: item.detected_at,
+              note: item.note,
+            });
+
+            return (
             <div key={item.id} className="bg-white border border-[#e5e5e5] rounded-lg p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="font-semibold text-[#000935]">{item.worker_name}</div>
+                  <div className="font-semibold text-[#000935]">{incidentView.title}</div>
+                  <div className="text-sm text-[#666666] mt-0.5">{item.worker_name}</div>
                   <div className="text-sm text-[#666666]">{item.worker_email}{item.worker_phone_number ? ` | ${item.worker_phone_number}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -216,61 +232,92 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                         ? TEXTS.incidencias.table.states.resolved
                         : TEXTS.incidencias.table.states.dismissed}
                   </span>
-                  <span className={`inline-flex px-2 py-1 rounded-full text-xs ${item.has_correction ? "bg-[#ecfeff] text-[#0f766e]" : "bg-[#f5f5f5] text-[#666666]"}`}>
-                    {item.has_correction ? TEXTS.incidencias.table.correction.yes : TEXTS.incidencias.table.correction.no}
-                  </span>
+                  {item.status !== "OPEN" && (
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs ${item.has_correction ? "bg-[#ecfeff] text-[#0f766e]" : "bg-[#f5f5f5] text-[#666666]"}`}>
+                      {item.has_correction ? TEXTS.incidencias.table.correction.yes : TEXTS.incidencias.table.correction.no}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-3 text-sm">
                 <div>
-                  <div className="text-[#666666]">{TEXTS.incidencias.table.columns.incidencia}</div>
-                  <div className="text-[#000935]">{item.incident_type}</div>
+                  <div className="text-[#666666]">{incidentView.primaryTimeLabel}</div>
+                  <div className="font-semibold text-[#000935]">{formatIncidentDateTime(incidentView.clockInAt)}</div>
                 </div>
                 <div>
-                  <div className="text-[#666666]">{TEXTS.incidencias.table.columns.detectada}</div>
-                  <div className="text-[#000935]">{new Date(item.detected_at).toLocaleString("es-ES")}</div>
+                  <div className="text-[#666666]">{incidentView.targetTimeLabel}</div>
+                  <div className="font-semibold text-[#000935]">{formatIncidentDateTime(incidentView.suggestedOutAt)}</div>
+                  <div className="text-xs text-[#666666] mt-1">{incidentView.targetHelp}</div>
                 </div>
                 <div>
-                  <div className="text-[#666666]">{TEXTS.incidencias.table.columns.evento}</div>
-                  <div className="text-[#000935]">
-                    {item.related_event
-                      ? `${item.related_event.event_type} - ${new Date(item.related_event.happened_at).toLocaleString("es-ES")}`
-                      : "-"}
-                  </div>
+                  <div className="text-[#666666]">{incidentView.netWorkedLabel}</div>
+                  <div className="font-semibold text-[#000935]">{incidentView.netWorkedValue}</div>
                 </div>
                 <div>
-                  <div className="text-[#666666]">{TEXTS.workerDetail.correction.reasonLabel}</div>
-                  <div className="text-[#000935]">{item.note || "-"}</div>
+                  <div className="text-[#666666]">{incidentView.breakLabel}</div>
+                  <div className="font-semibold text-[#000935]">{incidentView.breakValue}</div>
+                </div>
+                <div>
+                  <div className="text-[#666666]">{incidentView.actionLabel}</div>
+                  <div className="font-semibold text-[#dc2626]">{incidentView.correctionButton}</div>
+                </div>
+                <div className="md:col-span-5 rounded-lg bg-[#fff7f7] border border-[#fecaca] p-3">
+                  <div className="text-[#991b1b] font-semibold">{incidentView.problemLabel}</div>
+                  <div className="text-[#000935] mt-1">{incidentView.description}</div>
+                  <div className="text-[#000935] mt-1">{incidentView.recommendedAction}</div>
                 </div>
               </div>
 
               <div className="mt-3 pt-3 border-t border-[#e5e5e5] flex items-center gap-3 text-sm">
                 <button
-                  onClick={() => onOpenWorkerDetail(item.worker_id)}
+                  onClick={() => onOpenWorkerDetail(item.worker_id, item.id)}
                   className="text-[#000935] hover:underline"
                 >
-                  {TEXTS.incidencias.actions.openWorker}
+                  {TEXTS.incidencias.actions.openIncident}
                 </button>
-                {item.can_correct && item.related_event && (
+                {item.status === "OPEN" && item.can_correct && item.related_event && (
                   <button
                     onClick={() => openCorrection(item)}
-                    className="text-[#00C9CE] hover:underline"
+                    disabled={saving}
+                    className="inline-flex px-3 py-2 rounded-lg bg-[#00C9CE] text-white hover:bg-[#00b3b8] disabled:opacity-50"
                   >
-                    {TEXTS.incidencias.actions.correctNow}
+                    {incidentView.correctionButton}
                   </button>
                 )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
       {selectedIncident?.related_event && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-lg w-full max-w-lg p-6">
-            <h3 className="mb-2">{TEXTS.incidencias.correctionModal.title}</h3>
-            <p className="text-sm text-[#666666] mb-4">{TEXTS.incidencias.correctionModal.description}</p>
+            {(() => {
+              const view = getIncidentView({
+                incident_type: selectedIncident.incident_type,
+                status: selectedIncident.status,
+                related_event: selectedIncident.related_event,
+                clock_in_at: selectedIncident.clock_in_event?.happened_at ?? null,
+              });
+              return (
+                <>
+                  <h3 className="mb-2">{view.correctionButton}</h3>
+                  <p className="text-sm text-[#666666] mb-4">{view.description}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-sm rounded-lg border border-[#e5e5e5] bg-[#f9f9f9] p-3">
+                    <div>
+                      <div className="text-[#666666]">{view.primaryTimeLabel}</div>
+                      <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.clockInAt)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[#666666]">{view.targetTimeLabel}</div>
+                      <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.suggestedOutAt)}</div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             <div className="space-y-4">
               <div>
                 <label className="block mb-2">{TEXTS.workerDetail.correction.eventType}</label>
@@ -323,6 +370,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

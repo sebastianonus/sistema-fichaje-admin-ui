@@ -26,6 +26,7 @@ interface WorkerEvent {
   happened_at: string;
   note?: string | null;
   related_event_id?: string | null;
+  correction_action?: string | null;
   corrected_event_type?: string | null;
   corrected_happened_at?: string | null;
   latitude?: number | null;
@@ -119,6 +120,42 @@ function closedMinutesFromEvents(dayEvents: WorkerEvent[]) {
   return total;
 }
 
+function buildWorkerShiftState(events: WorkerEvent[]) {
+  const asc = [...events].sort(
+    (a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime(),
+  );
+  let state: "OUT" | "IN" | "BREAK" = "OUT";
+  let openClockIn: WorkerEvent | null = null;
+
+  for (const ev of asc) {
+    if (ev.event_type === "CLOCK_IN") {
+      state = "IN";
+      openClockIn = ev;
+      continue;
+    }
+    if (ev.event_type === "BREAK_START") {
+      if (state === "IN") state = "BREAK";
+      continue;
+    }
+    if (ev.event_type === "BREAK_END") {
+      if (state === "BREAK") state = "IN";
+      continue;
+    }
+    if (ev.event_type === "CLOCK_OUT") {
+      if (state === "IN" || state === "BREAK") {
+        state = "OUT";
+        openClockIn = null;
+      }
+    }
+  }
+
+  return {
+    isClockedIn: state === "IN" || state === "BREAK",
+    isOnBreak: state === "BREAK",
+    openClockIn,
+  };
+}
+
 async function getCurrentLocation(): Promise<ClockLocation | null> {
   if (!("geolocation" in navigator)) return null;
 
@@ -173,9 +210,9 @@ export default function WorkerApp() {
   const [termsError, setTermsError] = useState<string | null>(null);
 
   const effectiveEvents = useMemo(() => buildEffectiveTimeEvents(events), [events]);
-  const lastEvent = effectiveEvents[0]?.event_type ?? null;
-  const isOnBreak = lastEvent === "BREAK_START";
-  const isClockedIn = !!lastEvent && lastEvent !== "CLOCK_OUT";
+  const shiftState = useMemo(() => buildWorkerShiftState(effectiveEvents), [effectiveEvents]);
+  const isOnBreak = shiftState.isOnBreak;
+  const isClockedIn = shiftState.isClockedIn;
 
   const mustChangePassword = profile?.password_reset_required === true;
   const resetDeadline = profile?.password_reset_deadline ? new Date(profile.password_reset_deadline) : null;
@@ -188,6 +225,17 @@ export default function WorkerApp() {
   const canClosePasswordResetModal = mustChangePassword && !isDeadlineDayOrLater;
   const passwordChangeBlocksClock = mustChangePassword && resetDeadlineExpired;
   const termsGateBlocked = termsChecking || !termsAccepted;
+  const clockBlockedReason = useMemo(() => {
+    if (!profile?.is_active) return t.status.inactiveUser;
+    if (passwordChangeBlocksClock) return t.status.passwordChangeBlocking;
+    if (termsGateBlocked) {
+      return termsChecking
+        ? "Verificando condiciones de uso..."
+        : "Debes aceptar las condiciones de uso y la informacion RGPD para habilitar el fichaje.";
+    }
+    if (actionLoading) return t.loading;
+    return null;
+  }, [profile?.is_active, passwordChangeBlocksClock, termsGateBlocked, termsChecking, actionLoading, t]);
 
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
@@ -484,16 +532,36 @@ export default function WorkerApp() {
       setActionLoading(true);
       setError(null);
       setLocationWarning(null);
+
+      const freshEvents = await getMyTimeEvents();
+      const freshEffectiveEvents = buildEffectiveTimeEvents(freshEvents as WorkerEvent[]);
+      const freshShiftState = buildWorkerShiftState(freshEffectiveEvents);
+      setEvents(freshEvents as WorkerEvent[]);
+
+      let nextEventType = eventType;
+      if (eventType === "BREAK_START" || eventType === "BREAK_END") {
+        if (!freshShiftState.isClockedIn) {
+          throw new Error("No hay una jornada abierta. Registra primero la entrada.");
+        }
+        nextEventType = freshShiftState.isOnBreak ? "BREAK_END" : "BREAK_START";
+      } else if (eventType === "CLOCK_IN" && freshShiftState.isClockedIn) {
+        throw new Error("Ya tienes una jornada abierta. Actualiza el estado antes de volver a fichar entrada.");
+      } else if (eventType === "CLOCK_OUT" && !freshShiftState.isClockedIn) {
+        throw new Error("No hay una jornada abierta que se pueda finalizar.");
+      }
+
       const location = await getCurrentLocation();
-      if (!location && (eventType === "CLOCK_IN" || eventType === "CLOCK_OUT")) {
+      if (!location) {
         setLocationWarning(t.status.gpsMissingWarning);
         throw new Error(t.errors.gpsRequired);
       }
-      await sendClockEvent(eventType, undefined, location);
+      await sendClockEvent(nextEventType, undefined, location);
       setLocationWarning(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.errors.clockError);
+      const message = err instanceof Error ? err.message : t.errors.clockError;
+      await load();
+      setError(message);
     } finally {
       setActionLoading(false);
     }
@@ -676,6 +744,11 @@ export default function WorkerApp() {
           {!termsChecking && !termsAccepted && (
             <p className="text-sm text-[#856404] mt-3">
               Debes aceptar las condiciones de uso y la informacion RGPD para habilitar el fichaje.
+            </p>
+          )}
+          {clockBlockedReason && (
+            <p className="text-sm text-[#856404] mt-3">
+              Botones bloqueados: {clockBlockedReason}
             </p>
           )}
           {error && <p className="text-sm text-[#dc2626] mt-3">{error}</p>}

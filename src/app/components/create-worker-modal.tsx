@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X } from 'lucide-react';
 import { TEXTS } from '@/constants/texts';
 import { createWorker } from '@/lib/api';
 
@@ -12,7 +12,6 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +25,6 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
         full_name: fullName.trim(),
         email: email.trim(),
         phone_number: phone.trim(),
-        password: password.trim(),
       });
       onCreated?.();
     } catch (err) {
@@ -36,7 +34,7 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
     }
   };
 
-  const isValid = fullName.trim() && email.trim() && phone.trim() && password.trim();
+  const isValid = fullName.trim() && email.trim() && phone.trim();
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -92,23 +90,7 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
             <p className="mt-1 text-xs text-[#666666]">{TEXTS.createWorker.fields.phoneFormatHelp}</p>
           </div>
 
-          <div>
-            <label className="block mb-2">
-              {TEXTS.createWorker.fields.password} <span className="text-[#dc2626]">{TEXTS.createWorker.required}</span>
-            </label>
-            <input
-              type="text"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={TEXTS.createWorker.fields.placeholders.password}
-              className="w-full px-3 py-2 bg-white border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00C9CE]"
-              required
-            />
-            <div className="mt-2 p-3 bg-[#fff3cd] border border-[#ffc107] rounded-lg flex gap-2">
-              <AlertTriangle className="w-5 h-5 text-[#856404] flex-shrink-0" />
-              <p className="text-sm text-[#856404]">{TEXTS.createWorker.warning}</p>
-            </div>
-          </div>
+          <p className="text-sm text-[#666666]">{TEXTS.createWorker.autoPasswordHint}</p>
 
           {error && (
             <div className="p-3 bg-[#fef2f2] border border-[#dc2626] rounded-lg text-sm text-[#dc2626]">

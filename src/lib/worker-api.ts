@@ -48,11 +48,11 @@ export async function getWorkerProfile() {
   };
 }
 
-export async function getMyTimeEvents(limit = 20) {
+export async function getMyTimeEvents(limit = 200) {
   if (!supabase) throw new Error(TEXTS.api.missingSupabaseClient);
   const { data, error } = await supabase
     .from("time_events")
-    .select("id,event_type,happened_at,note,related_event_id,corrected_event_type,corrected_happened_at")
+    .select("id,event_type,happened_at,note,related_event_id,correction_action,corrected_event_type,corrected_happened_at")
     .order("happened_at", { ascending: false })
     .limit(limit);
 

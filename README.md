@@ -49,6 +49,7 @@ Notas:
 - `src/app/components/*`: vistas y modales
 - `INTEGRATION.md`: contrato de endpoints vigente
 - `GUIA_TRABAJADORES.md`: base de tutorial para uso del portal worker
+- `MANUAL_PRACTICO_ROLES_ONUS_FICHAJE.md`: operativa practica segun rol (trabajador/admin/IT/direccion)
 
 ## Nota
 

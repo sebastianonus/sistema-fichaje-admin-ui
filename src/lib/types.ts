@@ -10,6 +10,7 @@ export interface DashboardMetrics {
   open_incidents_count: number;
   open_incidents: Array<{
     id: string;
+    incident_type: string;
     full_name: string;
     email: string;
     phone_number?: string | null;
@@ -29,6 +30,7 @@ export interface WorkerSummary {
     happened_at: string;
   } | null;
   open_incident: {
+    id?: string;
     incident_type: string;
     detected_at: string;
   } | null;
@@ -43,6 +45,7 @@ export interface WorkerDetail {
   created_at: string;
   open_incidents?: Array<{
     id: string;
+    related_event_id?: string | null;
     incident_type: string;
     status: string;
     detected_at: string;
@@ -63,6 +66,7 @@ export interface WorkerDetail {
     correction?: {
       id: string;
       note?: string | null;
+      correction_action?: string | null;
       corrected_event_type?: string | null;
       corrected_happened_at?: string | null;
       happened_at: string;
@@ -75,6 +79,7 @@ export interface WorkerDetail {
     happened_at: string;
     note?: string | null;
     related_event_id?: string | null;
+    correction_action?: string | null;
     corrected_event_type?: string | null;
     corrected_happened_at?: string | null;
     latitude?: number | null;
@@ -103,10 +108,19 @@ export interface IncidentHistoryItem {
     longitude?: number | null;
     gps_accuracy_m?: number | null;
   } | null;
+  clock_in_event?: {
+    id: string;
+    event_type: string;
+    happened_at: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    gps_accuracy_m?: number | null;
+  } | null;
   has_correction: boolean;
   correction?: {
     id: string;
     note?: string | null;
+    correction_action?: string | null;
     corrected_event_type?: string | null;
     corrected_happened_at?: string | null;
     happened_at: string;

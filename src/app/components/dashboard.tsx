@@ -3,6 +3,7 @@ import { Users, UserCheck, Clock, Plus, Download, AlertTriangle } from 'lucide-r
 import { Page } from '@/app/App';
 import { TEXTS } from '@/constants/texts';
 import { getDashboardMetrics } from '@/lib/api';
+import { formatIncidentDateTime, getIncidentView } from '@/lib/incident-view';
 import type { DashboardMetrics } from '@/lib/types';
 
 interface DashboardProps {
@@ -119,7 +120,8 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
               {data.open_incidents.slice(0, 3).map((incident) => (
                 <div key={`${incident.id}-${incident.detected_at}`} className="text-sm">
                   <div className="font-medium text-[#000935]">{incident.full_name}</div>
-                  <div className="text-[#666666]">{incident.phone_number || incident.email || TEXTS.dashboard.incidents.noPhone}</div>
+                  <div className="text-[#dc2626]">{getIncidentView({ incident_type: incident.incident_type, status: 'OPEN' }).shortTitle}</div>
+                  <div className="text-[#666666]">{formatIncidentDateTime(incident.detected_at)}</div>
                 </div>
               ))}
             </div>
