@@ -17,6 +17,8 @@ type Segment = {
   end: number;
 };
 
+type TimelineState = "OUT" | "IN" | "BREAK";
+
 const DAY_MINUTES = 24 * 60;
 
 function minuteOfDay(d: Date) {
@@ -27,13 +29,75 @@ function clampMinute(minute: number) {
   return Math.min(Math.max(minute, 0), DAY_MINUTES);
 }
 
-function isToday(d: Date) {
-  const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
+export function buildWorkdayTimeline(events: TimelineEvent[], now: Date) {
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const ordered = events
+    .map((event) => ({ ...event, date: new Date(event.happened_at) }))
+    .filter((event) => !Number.isNaN(event.date.getTime()) && event.date <= now && event.date < dayEnd)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  let state: TimelineState = "OUT";
+  for (const event of ordered) {
+    if (event.date >= dayStart) break;
+    if (event.event_type === "CLOCK_IN") state = "IN";
+    else if (event.event_type === "BREAK_START" && state === "IN") state = "BREAK";
+    else if (event.event_type === "BREAK_END" && state === "BREAK") state = "IN";
+    else if (event.event_type === "CLOCK_OUT") state = "OUT";
+  }
+
+  const markers = ordered
+    .filter((event) => event.date >= dayStart)
+    .map((event) => ({
+      id: event.id,
+      type: event.event_type,
+      minute: clampMinute(minuteOfDay(event.date)),
+      timeLabel: event.date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+    }));
+
+  const segments: Segment[] = [];
+  let openStart: number | null = state === "IN" ? 0 : null;
+  for (const marker of markers) {
+    if (marker.type === "CLOCK_IN" && state === "OUT") {
+      state = "IN";
+      openStart = marker.minute;
+      continue;
+    }
+    if (marker.type === "BREAK_START" && state === "IN" && openStart !== null) {
+      segments.push({ start: clampMinute(openStart), end: clampMinute(marker.minute) });
+      state = "BREAK";
+      openStart = null;
+      continue;
+    }
+    if (marker.type === "BREAK_END" && state === "BREAK") {
+      state = "IN";
+      openStart = marker.minute;
+      continue;
+    }
+    if (marker.type === "CLOCK_OUT" && (state === "IN" || state === "BREAK")) {
+      if (state === "IN" && openStart !== null) {
+        segments.push({ start: clampMinute(openStart), end: clampMinute(marker.minute) });
+      }
+      state = "OUT";
+      openStart = null;
+    }
+  }
+
+  const nowMinute = clampMinute(minuteOfDay(now));
+  const hasOpenSegment = state === "IN" && openStart !== null;
+  if (hasOpenSegment && openStart !== null) {
+    segments.push({ start: clampMinute(openStart), end: Math.max(clampMinute(openStart), nowMinute) });
+  }
+
+  return {
+    markers,
+    segments,
+    hasOpenSegment,
+    openHandleMinute: hasOpenSegment ? nowMinute : null,
+  };
 }
 
 export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }: WorkdayTimelineProps) {
@@ -44,38 +108,7 @@ export function WorkdayTimeline({ events, title = TEXTS.timeline.defaultTitle }:
     return () => window.clearInterval(id);
   }, []);
 
-  const nowMinute = useMemo(() => minuteOfDay(new Date(nowTick)), [nowTick]);
-
-  const processed = useMemo(() => {
-    const todays = events
-      .map((e) => ({ ...e, date: new Date(e.happened_at) }))
-      .filter((e) => isToday(e.date))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    const markers = todays.map((e) => ({
-      id: e.id,
-      type: e.event_type,
-      minute: clampMinute(minuteOfDay(e.date)),
-      timeLabel: e.date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
-    }));
-
-    const segments: Segment[] = [];
-    let openStart: number | null = null;
-    for (const m of markers) {
-      if (m.type === "CLOCK_IN" || m.type === "BREAK_END") {
-        openStart = m.minute;
-        continue;
-      }
-      if ((m.type === "BREAK_START" || m.type === "CLOCK_OUT") && openStart !== null) {
-        segments.push({ start: clampMinute(openStart), end: clampMinute(m.minute) });
-        openStart = null;
-      }
-    }
-    const hasOpenSegment = openStart !== null;
-    if (openStart !== null) segments.push({ start: clampMinute(openStart), end: clampMinute(nowMinute) });
-
-    return { markers, segments, hasOpenSegment, openHandleMinute: hasOpenSegment ? nowMinute : null };
-  }, [events, nowMinute]);
+  const processed = useMemo(() => buildWorkdayTimeline(events, new Date(nowTick)), [events, nowTick]);
 
   return (
     <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
