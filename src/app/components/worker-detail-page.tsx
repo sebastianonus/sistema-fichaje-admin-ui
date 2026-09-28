@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, AlertTriangle, MapPin } from 'lucide-react';
 import { WorkdayTimeline } from '@/app/components/workday-timeline';
 import { ConfirmationModal } from '@/app/components/confirmation-modal';
+import { ExternalServicePeriods } from '@/app/components/external-service-periods';
 import { TEXTS } from '@/constants/texts';
 import { activateWorker, addWorkerEvent, changeWorkerPassword, correctWorkerEvent, deactivateWorker, deleteWorkerEvent, getWorker, resolveIncident, updateWorker } from '@/lib/api';
 import {
@@ -356,6 +357,21 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
     }
   };
 
+  const handleRelationshipChange = async (relationshipType: 'EMPLOYEE' | 'EXTERNAL') => {
+    if (!worker || worker.relationship_type === relationshipType) return;
+    try {
+      setSaving(true);
+      setError(null);
+      setInfo(null);
+      await updateWorker(worker.id, { relationship_type: relationshipType });
+      await fetchWorker();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : TEXTS.workerDetail.errors.generic);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openCorrectionModal = (event: (typeof filteredEvents)[number]) => {
     const incident = incidentByRelatedEventId.get(event.id);
     const incidentClockIn = incident ? clockInByIncidentEventId.get(event.id) : null;
@@ -640,6 +656,18 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
                     {worker.is_active ? TEXTS.workerDetail.status.active : TEXTS.workerDetail.status.inactive}
                   </span>
                 </div>
+                <div>
+                  <label className="block mb-2">{TEXTS.workerDetail.fields.relationship}</label>
+                  <select
+                    value={worker.relationship_type}
+                    onChange={(event) => handleRelationshipChange(event.target.value as 'EMPLOYEE' | 'EXTERNAL')}
+                    disabled={saving}
+                    className="w-full rounded-lg border border-[#dbe3eb] bg-white px-3 py-2 text-sm text-[#000935] disabled:opacity-50"
+                  >
+                    <option value="EMPLOYEE">Plantilla</option>
+                    <option value="EXTERNAL">Externo · No asalariado</option>
+                  </select>
+                </div>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
@@ -668,10 +696,15 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
             </div>
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
-              <WorkdayTimeline events={effectiveEvents} title={TEXTS.workerPortal.sections.timelineTitle} />
+              <WorkdayTimeline
+                events={effectiveEvents}
+                title={worker.relationship_type === 'EXTERNAL' ? 'Linea de servicio de hoy' : TEXTS.workerPortal.sections.timelineTitle}
+              />
             </div>
 
-            <div ref={incidentsSectionRef} className="bg-white border border-[#e5e5e5] rounded-lg p-4 scroll-mt-20">
+            {worker.relationship_type === 'EXTERNAL' && <ExternalServicePeriods workerId={worker.id} />}
+
+            {worker.relationship_type === 'EMPLOYEE' && <div ref={incidentsSectionRef} className="bg-white border border-[#e5e5e5] rounded-lg p-4 scroll-mt-20">
               <h3 className="mb-3">{TEXTS.workerDetail.sections.incidents}</h3>
               {worker.open_incidents && worker.open_incidents.length > 0 ? (
                 <div className="space-y-2">
@@ -742,7 +775,7 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
               ) : (
                 <p className="text-sm text-[#666666]">{TEXTS.workerDetail.incidents.empty}</p>
               )}
-            </div>
+            </div>}
 
             <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">

@@ -6,9 +6,13 @@ const baseUrl = process.env.WORKER_AUDIT_URL || 'http://127.0.0.1:5173/worker';
 const email = process.env.LOCAL_WORKER_EMAIL;
 const password = process.env.LOCAL_WORKER_PASSWORD;
 const useFixture = process.env.WORKER_AUDIT_FIXTURE === 'true';
+const relationshipType = process.env.WORKER_AUDIT_RELATIONSHIP === 'EXTERNAL' ? 'EXTERNAL' : 'EMPLOYEE';
 const outputDir = path.resolve('.artifacts/worker-audit');
 const technicalEventPattern = /\b(?:CLOCK_IN|CLOCK_OUT|BREAK_START|BREAK_END)\b/;
-const expectedEventLabels = ['Entrada', 'Inicio pausa', 'Final pausa', 'Salida'];
+const expectedEventLabels = relationshipType === 'EXTERNAL'
+  ? ['Inicio de servicio', 'Inicio pausa', 'Final pausa', 'Fin de servicio']
+  : ['Entrada', 'Inicio pausa', 'Final pausa', 'Salida'];
+const expectedPortalHeading = relationshipType === 'EXTERNAL' ? 'Portal colaborador externo' : 'Portal trabajador';
 
 if (!useFixture && (!email || !password)) {
   throw new Error('LOCAL_WORKER_EMAIL and LOCAL_WORKER_PASSWORD are required');
@@ -57,6 +61,7 @@ async function installWorkerFixture(context) {
       full_name: 'Trabajador de auditoria',
       role: 'worker',
       is_active: true,
+      relationship_type: relationshipType,
       password_reset_required: false,
       password_reset_deadline: null,
       password_changed_at: new Date().toISOString(),
@@ -77,7 +82,7 @@ async function installWorkerFixture(context) {
         accepted: true,
         acceptance: {
           id: 'fixture-acceptance',
-          version: 'v1.1-2026-03-05',
+          version: relationshipType === 'EXTERNAL' ? 'v1.1-2026-03-05-external-v1' : 'v1.1-2026-03-05',
           accepted_at: new Date().toISOString(),
         },
       },
@@ -129,14 +134,14 @@ try {
   }
 
   await page.waitForFunction(
-    () =>
-      document.body.innerText.includes('Portal trabajador') ||
+    (heading) =>
+      document.body.innerText.includes(heading) ||
       Boolean(document.querySelector('form p.text-\\[\\#dc2626\\]')),
-    null,
+    expectedPortalHeading,
     { timeout: 30_000 },
   );
 
-  const portalHeading = page.getByRole('heading', { name: 'Portal trabajador' });
+  const portalHeading = page.getByRole('heading', { name: expectedPortalHeading });
   if (!(await portalHeading.isVisible())) {
     await page.screenshot({ path: path.join(outputDir, 'worker-login-failure.png') });
     const loginError = await page.locator('form p').last().textContent();

@@ -57,6 +57,34 @@ export const TEXTS = {
       clockOut: 'Salida',
       unknown: 'Evento de fichaje',
     },
+    external: {
+      badge: 'Externo · Profesional independiente',
+      sections: {
+        clockStatus: 'Estado del servicio',
+        latestEvents: 'Ultimos eventos de servicio',
+        timelineTitle: 'Linea de servicio de hoy',
+      },
+      eventTypes: {
+        clockIn: 'Inicio de servicio',
+        breakStart: 'Inicio pausa',
+        breakEnd: 'Final pausa',
+        clockOut: 'Fin de servicio',
+        unknown: 'Evento de servicio',
+      },
+      status: {
+        openClock: 'Tienes un servicio abierto.',
+        openBreak: 'Tienes una pausa activa. Registra el final de pausa o el fin del servicio.',
+        noOpenClock: 'No tienes ningun servicio abierto.',
+        gpsMissingWarning: 'No se pudo obtener la ubicacion. Es obligatoria para registrar el inicio, las pausas y el fin del servicio.',
+        gpsRequired: 'No se pudo obtener tu ubicacion. Activa los permisos y espera a que el GPS se cargue antes de registrar el evento.',
+      },
+      actions: {
+        clockIn: 'Inicio de servicio',
+        breakStart: 'Inicio pausa',
+        breakEnd: 'Final pausa',
+        clockOut: 'Fin de servicio',
+      },
+    },
     status: {
       openClock: 'Tienes fichaje abierto (entrada registrada).',
       openBreak: 'Tienes una pausa activa. Registra el final de pausa o la salida.',
@@ -204,10 +232,17 @@ export const TEXTS = {
   trabajadores: {
     title: 'Trabajadores',
     subtitle: 'Gestion de altas, estados y fichajes',
+    relationship: {
+      tabsLabel: 'Tipo de relacion',
+      employees: 'Plantilla',
+      externals: 'Externos',
+      externalBadge: 'Externo · No asalariado',
+    },
     filters: {
       title: 'Filtros',
       clear: 'Limpiar filtros',
       estado: 'Estado',
+      relationship: 'Relacion',
       nombre: 'Nombre',
       email: 'Email',
       createdFrom: 'Creado desde',
@@ -438,6 +473,7 @@ export const TEXTS = {
   createWorker: {
     title: 'Crear trabajador',
     fields: {
+      relationshipType: 'Tipo de relacion',
       fullName: 'Nombre completo',
       email: 'Email',
       phone: 'Telefono',
@@ -447,6 +483,12 @@ export const TEXTS = {
         email: 'correo@ejemplo.com',
         phone: '+34 600000000',
       },
+    },
+    relationship: {
+      employee: 'Plantilla',
+      external: 'Externo',
+      employeeHelp: 'Persona asalariada incluida en el control horario laboral.',
+      externalHelp: 'Profesional autonomo o proveedor independiente. No forma parte de la plantilla laboral.',
     },
     autoPasswordHint: 'El sistema generara automaticamente una contrasena temporal para el trabajador.',
     actions: {

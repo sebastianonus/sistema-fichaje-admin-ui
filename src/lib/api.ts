@@ -1,5 +1,5 @@
 import { getSessionAccessToken, getStaticAdminToken } from "@/lib/supabase";
-import type { DashboardMetrics, ExportRecord, IncidentHistoryItem, WorkerDetail, WorkerSummary } from "@/lib/types";
+import type { DashboardMetrics, ExportRecord, ExternalServicePeriod, IncidentHistoryItem, WorkerDetail, WorkerRelationshipType, WorkerSummary } from "@/lib/types";
 import { TEXTS } from "@/constants/texts";
 
 type ApiEnvelope<T> = { ok: boolean; data: T; error?: string; details?: string };
@@ -78,6 +78,7 @@ export async function getWorkers(filters: {
   created_from?: string;
   created_to?: string;
   clocked_in?: boolean;
+  relationship_type?: WorkerRelationshipType;
 }) {
   const qp = new URLSearchParams();
   if (filters.search) qp.set("search", filters.search);
@@ -85,6 +86,7 @@ export async function getWorkers(filters: {
   if (filters.created_to) qp.set("created_to", toUtcDateEnd(filters.created_to));
   if (typeof filters.is_active === "boolean") qp.set("is_active", String(filters.is_active));
   if (typeof filters.clocked_in === "boolean") qp.set("clocked_in", String(filters.clocked_in));
+  if (filters.relationship_type) qp.set("relationship_type", filters.relationship_type);
 
   const qs = qp.toString();
   const res = await request<ApiEnvelope<WorkerSummary[]>>(`/admin-workers${qs ? `?${qs}` : ""}`);
@@ -135,6 +137,7 @@ export async function createWorker(worker: {
   email: string;
   password?: string;
   phone_number?: string;
+  relationship_type?: WorkerRelationshipType;
 }) {
   const res = await request<ApiEnvelope<{ worker_id: string; temp_password: string | null }>>("/admin-users", {
     method: "POST",
@@ -147,8 +150,46 @@ export async function updateWorker(workerId: string, updates: {
   full_name?: string;
   email?: string;
   phone_number?: string | null;
+  relationship_type?: WorkerRelationshipType;
 }) {
   const res = await request<ApiEnvelope<{ worker_id: string; warning?: string; auth_email_synced?: boolean; noop?: boolean }>>(`/admin-workers/${workerId}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+  return res.data;
+}
+
+export async function getExternalServicePeriods(workerId: string) {
+  const res = await request<ApiEnvelope<ExternalServicePeriod[]>>(`/admin-workers/${workerId}/external-periods`);
+  return res.data;
+}
+
+export async function createExternalServicePeriod(workerId: string, period: {
+  period_start: string;
+  period_end: string;
+  agreed_minutes: number | null;
+  invoiced_minutes: number;
+  validated_minutes: number | null;
+  invoice_reference?: string | null;
+  status?: ExternalServicePeriod["status"];
+  notes?: string | null;
+}) {
+  const res = await request<ApiEnvelope<{ id: string }>>(`/admin-workers/${workerId}/external-periods`, {
+    method: "POST",
+    body: JSON.stringify(period),
+  });
+  return res.data;
+}
+
+export async function updateExternalServicePeriod(workerId: string, periodId: string, updates: {
+  agreed_minutes?: number | null;
+  invoiced_minutes?: number;
+  validated_minutes?: number | null;
+  invoice_reference?: string | null;
+  status?: ExternalServicePeriod["status"];
+  notes?: string | null;
+}) {
+  const res = await request<ApiEnvelope<{ id: string }>>(`/admin-workers/${workerId}/external-periods/${periodId}`, {
     method: "PATCH",
     body: JSON.stringify(updates),
   });

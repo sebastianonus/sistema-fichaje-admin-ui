@@ -15,6 +15,7 @@ interface WorkerProfile {
   full_name: string;
   role: string;
   is_active: boolean;
+  relationship_type: "EMPLOYEE" | "EXTERNAL";
   email: string;
   password_reset_required: boolean;
   password_reset_deadline?: string | null;
@@ -57,6 +58,20 @@ const WORKER_TERMS_READING_TEXT = [
   "7. Conservacion y acceso: La empresa conserva los registros segun la normativa aplicable. Puedes ejercer tus derechos de proteccion de datos por los canales internos.",
   "8. Aceptacion: Al marcar la casilla y continuar, declaras que has leido y comprendido estas condiciones y la informacion de proteccion de datos.",
 ].join("\n\n");
+const EXTERNAL_TERMS_READING_TEXT = [
+  "1. Uso del sistema: El portal se utiliza para registrar de forma veraz el inicio, las pausas y el final de los servicios prestados.",
+  "2. Cuenta personal: Tus credenciales son personales e intransferibles. No compartas tu email ni tu contrasena con terceros.",
+  "3. Veracidad del registro: Debes registrar cada accion en el momento real. Queda prohibido registrar servicios por otra persona o manipular los datos.",
+  "4. Geolocalizacion: El sistema puede registrar ubicacion y precision GPS unicamente para acreditar la trazabilidad de la prestacion.",
+  "5. Correcciones: Si detectas un error, debes comunicarlo a administracion para su revision y, si procede, correccion auditada.",
+  "6. Finalidad de los datos: Los registros se tratan para verificar los servicios prestados y conciliarlos con los periodos facturados.",
+  "7. Naturaleza de la relacion: Este registro no altera la naturaleza mercantil de la colaboracion ni supone por si mismo una relacion laboral.",
+  "8. Aceptacion: Al marcar la casilla y continuar, declaras que has leido y comprendido estas condiciones y la informacion de proteccion de datos.",
+].join("\n\n");
+
+function termsVersionFor(relationshipType?: WorkerProfile["relationship_type"]) {
+  return relationshipType === "EXTERNAL" ? `${WORKER_TERMS_VERSION}-external-v1` : WORKER_TERMS_VERSION;
+}
 
 function isTodayLocal(value: string) {
   const d = new Date(value);
@@ -214,6 +229,11 @@ export default function WorkerApp() {
   const shiftState = useMemo(() => buildWorkerShiftState(effectiveEvents), [effectiveEvents]);
   const isOnBreak = shiftState.isOnBreak;
   const isClockedIn = shiftState.isClockedIn;
+  const isExternal = profile?.relationship_type === "EXTERNAL";
+  const portalSections = isExternal ? t.external.sections : t.sections;
+  const portalActions = isExternal ? t.external.actions : t.actions;
+  const portalStatus = isExternal ? t.external.status : t.status;
+  const activeTermsVersion = termsVersionFor(profile?.relationship_type);
 
   const mustChangePassword = profile?.password_reset_required === true;
   const resetDeadline = profile?.password_reset_deadline ? new Date(profile.password_reset_deadline) : null;
@@ -338,6 +358,7 @@ export default function WorkerApp() {
 
   const shouldShowShiftReminder = Boolean(
     profile?.is_active &&
+    !isExternal &&
     isClockedIn &&
     shiftReminderKey &&
     workedStats.totalWorkedMinutesToday >= (SHIFT_TARGET_MINUTES - SHIFT_REMINDER_BUFFER_MINUTES) &&
@@ -353,18 +374,20 @@ export default function WorkerApp() {
       const ev = await getMyTimeEvents();
       setProfile(p);
       setEvents(ev as WorkerEvent[]);
+      return p;
     } catch (err) {
       setError(err instanceof Error ? err.message : t.errors.generic);
+      return null;
     } finally {
       setLoadingData(false);
     }
   };
 
-  const loadTermsStatus = async () => {
+  const loadTermsStatus = async (relationshipType = profile?.relationship_type) => {
     try {
       setTermsChecking(true);
       setTermsError(null);
-      const status = await getWorkerTermsStatus(WORKER_TERMS_VERSION);
+      const status = await getWorkerTermsStatus(termsVersionFor(relationshipType));
       setTermsAccepted(status.accepted);
       setTermsChecked(status.accepted);
     } catch (err) {
@@ -394,8 +417,8 @@ export default function WorkerApp() {
       try {
         await ensureRole("worker");
         setAuthed(true);
-        await load();
-        await loadTermsStatus();
+        const loadedProfile = await load();
+        await loadTermsStatus(loadedProfile?.relationship_type);
       } catch (err) {
         setAuthed(false);
         setError(err instanceof Error ? err.message : t.errors.invalidSession);
@@ -409,9 +432,9 @@ export default function WorkerApp() {
 
   useEffect(() => {
     if (!authed) return;
-    const id = window.setInterval(() => {
-      load();
-      loadTermsStatus();
+    const id = window.setInterval(async () => {
+      const loadedProfile = await load();
+      await loadTermsStatus(loadedProfile?.relationship_type);
     }, 30 * 60 * 1000);
     return () => window.clearInterval(id);
   }, [authed]);
@@ -483,8 +506,8 @@ export default function WorkerApp() {
       setError(null);
       await signInWithRole(email.trim(), password, "worker");
       setAuthed(true);
-      await load();
-      await loadTermsStatus();
+      const loadedProfile = await load();
+      await loadTermsStatus(loadedProfile?.relationship_type);
     } catch (err) {
       setError(err instanceof Error ? err.message : TEXTS.login.errors.workerLoginError);
     } finally {
@@ -496,7 +519,7 @@ export default function WorkerApp() {
     try {
       setTermsSubmitting(true);
       setTermsError(null);
-      await acceptWorkerTerms(WORKER_TERMS_VERSION, APP_VERSION_LABEL);
+      await acceptWorkerTerms(activeTermsVersion, APP_VERSION_LABEL);
       setTermsAccepted(true);
     } catch (err) {
       setTermsError(err instanceof Error ? err.message : "No se pudo registrar la aceptacion.");
@@ -542,19 +565,19 @@ export default function WorkerApp() {
       let nextEventType = eventType;
       if (eventType === "BREAK_START" || eventType === "BREAK_END") {
         if (!freshShiftState.isClockedIn) {
-          throw new Error("No hay una jornada abierta. Registra primero la entrada.");
+          throw new Error(isExternal ? "No hay un servicio abierto. Registra primero el inicio de servicio." : "No hay una jornada abierta. Registra primero la entrada.");
         }
         nextEventType = freshShiftState.isOnBreak ? "BREAK_END" : "BREAK_START";
       } else if (eventType === "CLOCK_IN" && freshShiftState.isClockedIn) {
-        throw new Error("Ya tienes una jornada abierta. Actualiza el estado antes de volver a fichar entrada.");
+        throw new Error(isExternal ? "Ya tienes un servicio abierto. Actualiza el estado antes de iniciar otro." : "Ya tienes una jornada abierta. Actualiza el estado antes de volver a fichar entrada.");
       } else if (eventType === "CLOCK_OUT" && !freshShiftState.isClockedIn) {
-        throw new Error("No hay una jornada abierta que se pueda finalizar.");
+        throw new Error(isExternal ? "No hay un servicio abierto que se pueda finalizar." : "No hay una jornada abierta que se pueda finalizar.");
       }
 
       const location = await getCurrentLocation();
       if (!location) {
-        setLocationWarning(t.status.gpsMissingWarning);
-        throw new Error(t.errors.gpsRequired);
+        setLocationWarning(isExternal ? t.external.status.gpsMissingWarning : t.status.gpsMissingWarning);
+        throw new Error(isExternal ? t.external.status.gpsRequired : t.errors.gpsRequired);
       }
       await sendClockEvent(nextEventType, undefined, location);
       setLocationWarning(null);
@@ -676,7 +699,7 @@ export default function WorkerApp() {
               <div className="flex items-start gap-3 min-w-0">
                 <img src={headerLogo} alt="ONUS Express" className="h-7 md:h-8 w-auto mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <h1 className="text-xl font-bold text-[#000935] leading-tight">{t.title}</h1>
+                  <h1 className="text-xl font-bold text-[#000935] leading-tight">{isExternal ? 'Portal colaborador externo' : t.title}</h1>
                 </div>
               </div>
               <button onClick={handleLogout} className="px-3 py-2 border border-[#e5e5e5] rounded-lg text-[#000935] hover:bg-[#f9f9f9] whitespace-nowrap">
@@ -686,6 +709,11 @@ export default function WorkerApp() {
             <p className="text-sm text-[#666666] inline-flex items-start gap-1 break-words">
               <User className="w-4 h-4 shrink-0 mt-0.5" /> <span className="break-all">{workerName} ({profile?.email})</span>
             </p>
+            {isExternal && (
+              <span className="inline-flex w-fit rounded-full bg-[#fff7ed] px-2 py-1 text-xs font-semibold text-[#9a3412]">
+                {t.external.badge}
+              </span>
+            )}
           </div>
         </div>
         {showIosInstallHint && !isStandalone && (
@@ -701,16 +729,16 @@ export default function WorkerApp() {
 
         <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
           <h2 className="font-semibold text-[#000935] mb-3 inline-flex items-center gap-2">
-            <Clock3 className="w-4 h-4" /> {t.sections.clockStatus}
+            <Clock3 className="w-4 h-4" /> {portalSections.clockStatus}
           </h2>
           <p className="text-sm text-[#666666] mb-4">
             {profile?.is_active
-              ? (isOnBreak ? t.status.openBreak : isClockedIn ? t.status.openClock : t.status.noOpenClock)
+              ? (isOnBreak ? portalStatus.openBreak : isClockedIn ? portalStatus.openClock : portalStatus.noOpenClock)
               : t.status.inactiveUser}
           </p>
           {workedStats.hasClosedToday && (
             <p className="text-sm text-[#0f766e] mb-4">
-              {t.status.workedToday} {formatMinutes(workedStats.totalClosedMinutesToday)}
+              {isExternal ? 'Horas de servicio registradas hoy:' : t.status.workedToday} {formatMinutes(workedStats.totalClosedMinutesToday)}
             </p>
           )}
 
@@ -720,21 +748,21 @@ export default function WorkerApp() {
               disabled={!profile?.is_active || isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
               className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#16a34a] text-white rounded-lg hover:bg-[#15803d] disabled:opacity-50"
             >
-              <LogIn className="w-4 h-4" /> {t.actions.clockIn}
+              <LogIn className="w-4 h-4" /> {portalActions.clockIn}
             </button>
             <button
               onClick={() => handleClock(isOnBreak ? "BREAK_END" : "BREAK_START")}
               disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
               className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#0ea5e9] text-white rounded-lg hover:bg-[#0284c7] disabled:opacity-50"
             >
-              <Clock3 className="w-4 h-4" /> {isOnBreak ? t.actions.breakEnd : t.actions.breakStart}
+              <Clock3 className="w-4 h-4" /> {isOnBreak ? portalActions.breakEnd : portalActions.breakStart}
             </button>
             <button
               onClick={() => handleClock("CLOCK_OUT")}
               disabled={!profile?.is_active || !isClockedIn || actionLoading || passwordChangeBlocksClock || termsGateBlocked}
               className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] disabled:opacity-50"
             >
-              <LogOut className="w-4 h-4" /> {t.actions.clockOut}
+              <LogOut className="w-4 h-4" /> {portalActions.clockOut}
             </button>
           </div>
           {mustChangePassword && (
@@ -744,7 +772,7 @@ export default function WorkerApp() {
           )}
           {!termsChecking && !termsAccepted && (
             <p className="text-sm text-[#856404] mt-3">
-              Debes aceptar las condiciones de uso y la informacion RGPD para habilitar el fichaje.
+              Debes aceptar las condiciones de uso y la informacion RGPD para habilitar el registro.
             </p>
           )}
           {clockBlockedReason && (
@@ -755,10 +783,10 @@ export default function WorkerApp() {
           {error && <p className="text-sm text-[#dc2626] mt-3">{error}</p>}
         </div>
 
-        <WorkdayTimeline events={effectiveEvents} title={t.sections.timelineTitle} />
+        <WorkdayTimeline events={effectiveEvents} title={portalSections.timelineTitle} />
 
         <div className="bg-white border border-[#e5e5e5] rounded-lg p-4">
-          <h2 className="font-semibold text-[#000935] mb-3">{t.sections.latestEvents}</h2>
+          <h2 className="font-semibold text-[#000935] mb-3">{portalSections.latestEvents}</h2>
           {loadingData ? (
             <p className="text-sm text-[#666666]">{t.loading}</p>
           ) : events.length === 0 ? (
@@ -768,7 +796,7 @@ export default function WorkerApp() {
               {groupedEvents.map((group, idx) => (
                 <details key={group.key} className="border border-[#e5e5e5] rounded-lg bg-white" open={idx === 0}>
                   <summary className="list-none cursor-pointer p-3 flex items-center justify-between text-xs font-semibold">
-                    <span className="text-[#0f766e]">{t.status.journeyLabel} {group.label}</span>
+                    <span className="text-[#0f766e]">{isExternal ? 'Servicio' : t.status.journeyLabel} {group.label}</span>
                     <span className="text-[#475569]">
                       {t.status.totalLabel} {group.totalClosedMinutes > 0 ? formatMinutes(group.totalClosedMinutes) : t.status.noClosedSegments}
                     </span>
@@ -777,10 +805,10 @@ export default function WorkerApp() {
                     {group.events.map((ev) => (
                       <div key={ev.id} className="px-3 py-2 rounded-lg bg-[#f9f9f9] flex items-center justify-between gap-3">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-[#000935]">{formatClockEventLabel(ev.event_type)}</span>
+                          <span className="text-sm font-medium text-[#000935]">{formatClockEventLabel(ev.event_type, isExternal ? "EXTERNAL" : "EMPLOYEE")}</span>
                           {ev.event_type === "CLOCK_OUT" && workedStats.durationByClockOutId.has(ev.id) && (
                             <span className="text-xs text-[#0f766e]">
-                              {t.status.segmentTotal} {formatMinutes(workedStats.durationByClockOutId.get(ev.id) ?? 0)}
+                              {isExternal ? 'Total servicio:' : t.status.segmentTotal} {formatMinutes(workedStats.durationByClockOutId.get(ev.id) ?? 0)}
                             </span>
                           )}
                         </div>
@@ -801,19 +829,19 @@ export default function WorkerApp() {
         <div className="fixed inset-0 z-[70] bg-[#000935]/70 backdrop-blur-[2px] flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-white border border-[#d9e3ee] rounded-2xl shadow-2xl overflow-hidden">
             <div className="px-6 py-5 bg-[#00C9CE] text-white">
-              <h2 className="text-xl font-bold text-white">Condiciones de uso del portal de fichaje</h2>
+              <h2 className="text-xl font-bold text-white">{isExternal ? 'Condiciones del registro de servicios' : 'Condiciones de uso del portal de fichaje'}</h2>
               <p className="text-sm text-white/90 mt-2">
                 Antes de continuar, debes aceptar las condiciones de uso y declarar que has recibido la informacion de proteccion de datos.
               </p>
             </div>
             <div className="p-6 space-y-4">
               <div className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-4 text-sm text-[#334155] space-y-2">
-                <p>Version de condiciones: <strong>{WORKER_TERMS_VERSION}</strong></p>
+                <p>Version de condiciones: <strong>{activeTermsVersion}</strong></p>
                 <p>Este acuse quedara registrado con fecha y hora para fines de auditoria interna.</p>
                 {WORKER_TERMS_DOC_URL && (
                   <p>
                     <a href={WORKER_TERMS_DOC_URL} target="_blank" rel="noreferrer" className="text-[#0f766e] underline">
-                      Ver protocolo interno de fichaje
+                      {isExternal ? 'Ver protocolo de registro de servicios' : 'Ver protocolo interno de fichaje'}
                     </a>
                   </p>
                 )}
@@ -829,7 +857,7 @@ export default function WorkerApp() {
               <div className="rounded-lg border border-[#e2e8f0] bg-white p-4">
                 <p className="text-sm font-semibold text-[#0f172a] mb-2">Texto de lectura obligatoria</p>
                 <div className="max-h-40 overflow-y-auto whitespace-pre-line text-sm text-[#334155] pr-1">
-                  {WORKER_TERMS_READING_TEXT}
+                  {isExternal ? EXTERNAL_TERMS_READING_TEXT : WORKER_TERMS_READING_TEXT}
                 </div>
               </div>
 
@@ -842,7 +870,7 @@ export default function WorkerApp() {
                   disabled={termsChecking || termsSubmitting}
                 />
                 <span>
-                  He leido y acepto las condiciones de uso del sistema de fichaje y declaro haber recibido la informacion de proteccion de datos.
+                  He leido y acepto las condiciones de uso del sistema de registro y declaro haber recibido la informacion de proteccion de datos.
                 </span>
               </label>
 

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Filter, X, Search, Calendar, Users, Eye, KeyRound } from 'lucide-react';
+import { BriefcaseBusiness, Plus, Filter, X, Search, Calendar, Users, Eye, KeyRound } from 'lucide-react';
 import { CreateWorkerModal } from '@/app/components/create-worker-modal';
 import { TEXTS } from '@/constants/texts';
 import { getWorkers, sendWorkerOnboardingMessages } from '@/lib/api';
 import { getIncidentView } from '@/lib/incident-view';
 import { formatClockEventLabel } from '@/lib/time-event-labels';
-import type { WorkerSummary } from '@/lib/types';
+import type { WorkerRelationshipType, WorkerSummary } from '@/lib/types';
 import type { WorkersPreset } from '@/app/App';
 
 interface TrabajadoresProps {
@@ -155,6 +155,7 @@ function buildOnboardingEmailUrl(item: PreparedCredential) {
 export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [relationshipType, setRelationshipType] = useState<WorkerRelationshipType>('EMPLOYEE');
 
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
   const [filterName, setFilterName] = useState('');
@@ -199,6 +200,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
         created_to: filterDateTo || undefined,
         is_active: filterActive === 'all' ? undefined : filterActive === 'active',
         clocked_in: filterClockedIn || undefined,
+        relationship_type: relationshipType,
       });
       setWorkers(data);
     } catch (err) {
@@ -210,7 +212,11 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
 
   useEffect(() => {
     fetchWorkers();
-  }, [filterActive, search, filterDateFrom, filterDateTo, filterClockedIn]);
+  }, [filterActive, search, filterDateFrom, filterDateTo, filterClockedIn, relationshipType]);
+
+  useEffect(() => {
+    if (relationshipType === 'EXTERNAL') setFilterOpenIncidents(false);
+  }, [relationshipType]);
 
   useEffect(() => {
     // keep selection only for visible workers
@@ -226,6 +232,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
     setFilterDateTo('');
     setFilterActive(preset.isActive ?? 'all');
     setFilterClockedIn(!!preset.clockedIn);
+    setRelationshipType('EMPLOYEE');
     setShowFilters(true);
   }, [preset?.token]);
 
@@ -357,6 +364,27 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
               {TEXTS.trabajadores.actions.createWorker}
             </button>
           </div>
+        </div>
+
+        <div className="mb-5 inline-grid grid-cols-2 rounded-lg border border-[#dbe3eb] bg-white p-1" role="tablist" aria-label={TEXTS.trabajadores.relationship.tabsLabel}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={relationshipType === 'EMPLOYEE'}
+            onClick={() => setRelationshipType('EMPLOYEE')}
+            className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${relationshipType === 'EMPLOYEE' ? 'bg-[#000935] text-white' : 'text-[#475569] hover:bg-[#f5f7fa]'}`}
+          >
+            <Users className="h-4 w-4" /> {TEXTS.trabajadores.relationship.employees}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={relationshipType === 'EXTERNAL'}
+            onClick={() => setRelationshipType('EXTERNAL')}
+            className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${relationshipType === 'EXTERNAL' ? 'bg-[#000935] text-white' : 'text-[#475569] hover:bg-[#f5f7fa]'}`}
+          >
+            <BriefcaseBusiness className="h-4 w-4" /> {TEXTS.trabajadores.relationship.externals}
+          </button>
         </div>
 
         {showFilters && (
@@ -645,7 +673,14 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                           className="w-4 h-4 text-[#00C9CE] border-[#e5e5e5] rounded"
                         />
                       </td>
-                      <td className="px-3 py-2.5"><div className="font-medium text-[#000935] truncate" title={worker.full_name}>{worker.full_name}</div></td>
+                      <td className="px-3 py-2.5">
+                        <div className="font-medium text-[#000935] truncate" title={worker.full_name}>{worker.full_name}</div>
+                        {worker.relationship_type === 'EXTERNAL' && (
+                          <span className="mt-1 inline-flex rounded-full bg-[#fff7ed] px-2 py-0.5 text-[11px] font-semibold text-[#9a3412]">
+                            {TEXTS.trabajadores.relationship.externalBadge}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-[#666666] truncate" title={worker.email || undefined}>{worker.email || TEXTS.common.noData}</td>
                       <td className="px-3 py-2.5 whitespace-nowrap text-[#666666] truncate" title={worker.phone_number || undefined}>{worker.phone_number || TEXTS.common.noData}</td>
                       <td className="px-3 py-2.5">
@@ -718,6 +753,7 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
       </div>
       {showCreateModal && (
         <CreateWorkerModal
+          defaultRelationshipType={relationshipType}
           onClose={() => setShowCreateModal(false)}
           onCreated={() => {
             setShowCreateModal(false);

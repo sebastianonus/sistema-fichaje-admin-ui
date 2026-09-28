@@ -57,7 +57,7 @@ export async function getWorkerProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,full_name,role,is_active,password_reset_required,password_reset_deadline,password_changed_at")
+    .select("id,full_name,role,is_active,relationship_type,password_reset_required,password_reset_deadline,password_changed_at")
     .eq("id", userData.user.id)
     .single();
 

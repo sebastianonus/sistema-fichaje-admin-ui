@@ -1,17 +1,20 @@
 ﻿import { useState } from 'react';
-import { X } from 'lucide-react';
+import { BriefcaseBusiness, Users, X } from 'lucide-react';
 import { TEXTS } from '@/constants/texts';
 import { createWorker } from '@/lib/api';
+import type { WorkerRelationshipType } from '@/lib/types';
 
 interface CreateWorkerModalProps {
   onClose: () => void;
   onCreated?: () => void;
+  defaultRelationshipType?: WorkerRelationshipType;
 }
 
-export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps) {
+export function CreateWorkerModal({ onClose, onCreated, defaultRelationshipType = 'EMPLOYEE' }: CreateWorkerModalProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [relationshipType, setRelationshipType] = useState<WorkerRelationshipType>(defaultRelationshipType);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +28,7 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
         full_name: fullName.trim(),
         email: email.trim(),
         phone_number: phone.trim(),
+        relationship_type: relationshipType,
       });
       onCreated?.();
     } catch (err) {
@@ -47,6 +51,29 @@ export function CreateWorkerModal({ onClose, onCreated }: CreateWorkerModalProps
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block mb-2">{TEXTS.createWorker.fields.relationshipType}</label>
+            <div className="grid grid-cols-2 rounded-lg border border-[#dbe3eb] p-1" role="group" aria-label={TEXTS.createWorker.fields.relationshipType}>
+              <button
+                type="button"
+                onClick={() => setRelationshipType('EMPLOYEE')}
+                className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold ${relationshipType === 'EMPLOYEE' ? 'bg-[#000935] text-white' : 'text-[#475569] hover:bg-[#f5f7fa]'}`}
+              >
+                <Users className="h-4 w-4" /> {TEXTS.createWorker.relationship.employee}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRelationshipType('EXTERNAL')}
+                className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold ${relationshipType === 'EXTERNAL' ? 'bg-[#000935] text-white' : 'text-[#475569] hover:bg-[#f5f7fa]'}`}
+              >
+                <BriefcaseBusiness className="h-4 w-4" /> {TEXTS.createWorker.relationship.external}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-[#666666]">
+              {relationshipType === 'EXTERNAL' ? TEXTS.createWorker.relationship.externalHelp : TEXTS.createWorker.relationship.employeeHelp}
+            </p>
+          </div>
+
           <div>
             <label className="block mb-2">
               {TEXTS.createWorker.fields.fullName} <span className="text-[#dc2626]">{TEXTS.createWorker.required}</span>

@@ -1,3 +1,5 @@
+export type WorkerRelationshipType = "EMPLOYEE" | "EXTERNAL";
+
 export interface DashboardMetrics {
   active_workers: number;
   events_today: number;
@@ -24,6 +26,7 @@ export interface WorkerSummary {
   email: string;
   phone_number?: string | null;
   is_active: boolean;
+  relationship_type: WorkerRelationshipType;
   created_at: string;
   last_event: {
     event_type: string;
@@ -42,6 +45,7 @@ export interface WorkerDetail {
   email: string;
   phone_number?: string | null;
   is_active: boolean;
+  relationship_type: WorkerRelationshipType;
   created_at: string;
   open_incidents?: Array<{
     id: string;
@@ -86,6 +90,22 @@ export interface WorkerDetail {
     longitude?: number | null;
     gps_accuracy_m?: number | null;
   }>;
+}
+
+export interface ExternalServicePeriod {
+  id: string;
+  worker_id: string;
+  period_start: string;
+  period_end: string;
+  agreed_minutes: number | null;
+  invoiced_minutes: number;
+  registered_minutes: number;
+  validated_minutes: number | null;
+  invoice_reference?: string | null;
+  status: "DRAFT" | "REVIEWED" | "APPROVED" | "DISPUTED";
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface IncidentHistoryItem {

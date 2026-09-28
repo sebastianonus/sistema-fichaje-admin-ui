@@ -247,7 +247,7 @@ function CreateExportModal({ onClose, onCreated }: CreateExportModalProps) {
     async function loadWorkers() {
       try {
         setWorkersLoading(true);
-        const data = await getWorkers({});
+        const data = await getWorkers({ relationship_type: 'EMPLOYEE' });
         if (!cancelled) setWorkers(data);
       } catch {
         if (!cancelled) setWorkers([]);
