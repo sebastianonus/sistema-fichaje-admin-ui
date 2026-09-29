@@ -6,11 +6,12 @@ import { Incidencias } from '@/app/components/incidencias';
 import { WorkerDetailPage } from '@/app/components/worker-detail-page';
 import { Exports } from '@/app/components/exports';
 import { Ajustes } from '@/app/components/ajustes';
+import { Sesiones } from '@/app/components/sesiones';
 import { Login } from '@/app/components/login';
 import { TEXTS } from '@/constants/texts';
 import { ensureRole, hasStaticAdminToken, signOutAdmin, supabase } from '@/lib/supabase';
 
-export type Page = 'dashboard' | 'trabajadores' | 'incidencias' | 'workerDetail' | 'exports' | 'ajustes';
+export type Page = 'dashboard' | 'trabajadores' | 'incidencias' | 'sesiones' | 'workerDetail' | 'exports' | 'ajustes';
 export type WorkersPreset = {
   isActive?: 'active' | 'inactive';
   clockedIn?: boolean;
@@ -163,6 +164,7 @@ export default function App() {
         {currentPage === 'incidencias' && (
           <Incidencias onOpenWorkerDetail={handleOpenWorkerDetail} />
         )}
+        {currentPage === 'sesiones' && <Sesiones />}
         {currentPage === 'workerDetail' && selectedWorkerId && (
           <WorkerDetailPage
             workerId={selectedWorkerId}

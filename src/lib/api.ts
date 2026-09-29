@@ -1,5 +1,5 @@
 import { getSessionAccessToken, getStaticAdminToken } from "@/lib/supabase";
-import type { DashboardMetrics, ExportRecord, ExternalServicePeriod, IncidentHistoryItem, WorkerDetail, WorkerRelationshipType, WorkerSummary } from "@/lib/types";
+import type { AdminSessionsData, DashboardMetrics, ExportRecord, ExternalServicePeriod, IncidentHistoryItem, WorkerDetail, WorkerRelationshipType, WorkerSummary } from "@/lib/types";
 import { TEXTS } from "@/constants/texts";
 
 type ApiEnvelope<T> = { ok: boolean; data: T; error?: string; details?: string };
@@ -69,6 +69,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getDashboardMetrics() {
   const res = await request<ApiEnvelope<DashboardMetrics>>("/admin-dashboard");
+  return res.data;
+}
+
+export async function getAdminSessions() {
+  const res = await request<ApiEnvelope<AdminSessionsData>>("/admin-sessions");
+  return res.data;
+}
+
+export async function acknowledgeSecurityAlert(alertId: string) {
+  const res = await request<ApiEnvelope<{ id: string; status: "ACKNOWLEDGED"; acknowledged_at: string }>>(
+    `/admin-sessions/alerts/${alertId}/acknowledge`,
+    { method: "PATCH", body: JSON.stringify({}) },
+  );
   return res.data;
 }
 

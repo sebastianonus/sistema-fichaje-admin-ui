@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { TEXTS } from "@/constants/texts";
+import { getWorkerDeviceHeaders } from "@/lib/device-session";
 
 type ClockEventType = "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END";
 type ClockLocation = {
@@ -29,6 +30,7 @@ function getClockErrorMessage(body: { error?: string; details?: string }, status
     GPS_REQUIRED: "Debes permitir la ubicacion para registrar el fichaje.",
     INVALID_SEQUENCE: "La accion no coincide con el estado actual del fichaje.",
     INSERT_FAILED: "No se pudo guardar el fichaje.",
+    SESSION_REPLACED: "Esta sesion ha sido sustituida por un inicio de sesion en otro dispositivo.",
   };
 
   return messages[body.error ?? ""] ?? `No se pudo registrar el fichaje (${status}).`;
@@ -51,33 +53,42 @@ async function getSessionToken() {
 }
 
 export async function getWorkerProfile() {
-  if (!supabase) throw new Error(TEXTS.api.missingSupabaseClient);
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !userData.user?.id) throw new Error(TEXTS.api.unauthenticatedUser);
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id,full_name,role,is_active,relationship_type,password_reset_required,password_reset_deadline,password_changed_at")
-    .eq("id", userData.user.id)
-    .single();
-
-  if (error) throw error;
-  return {
-    ...data,
-    email: userData.user.email ?? "",
-  };
+  return workerDataRequest<{
+    id: string;
+    full_name: string;
+    role: string;
+    is_active: boolean;
+    relationship_type: "EMPLOYEE" | "EXTERNAL";
+    email: string;
+    password_reset_required: boolean;
+    password_reset_deadline?: string | null;
+    password_changed_at?: string | null;
+  }>("/profile");
 }
 
 export async function getMyTimeEvents(limit = 200) {
-  if (!supabase) throw new Error(TEXTS.api.missingSupabaseClient);
-  const { data, error } = await supabase
-    .from("time_events")
-    .select("id,event_type,happened_at,note,related_event_id,correction_action,corrected_event_type,corrected_happened_at")
-    .order("happened_at", { ascending: false })
-    .limit(limit);
+  return workerDataRequest<Array<Record<string, unknown>>>(`/events?limit=${encodeURIComponent(String(limit))}`);
+}
 
-  if (error) throw error;
-  return data ?? [];
+async function workerDataRequest<T>(path: string) {
+  const token = await getSessionToken();
+  const response = await fetch(`${getFunctionsBaseUrl()}/worker-data${path}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...getWorkerDeviceHeaders(),
+    },
+  });
+  const raw = await response.text();
+  const body = raw ? JSON.parse(raw) : {};
+  if (!response.ok || body?.ok === false) {
+    const code = body?.error || `HTTP_${response.status}`;
+    const message = code === "SESSION_REPLACED"
+      ? "Esta sesion ha sido sustituida por un inicio de sesion en otro dispositivo."
+      : body?.details || code;
+    throw new Error(message);
+  }
+  return body.data as T;
 }
 
 export async function sendClockEvent(event_type: ClockEventType, note?: string, location?: ClockLocation) {
@@ -87,6 +98,7 @@ export async function sendClockEvent(event_type: ClockEventType, note?: string, 
     headers: {
       "content-type": "application/json",
       Authorization: `Bearer ${token}`,
+      ...getWorkerDeviceHeaders(),
     },
     body: JSON.stringify({
       event_type,
@@ -113,6 +125,7 @@ export async function getWorkerTermsStatus(version: string) {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
+      ...getWorkerDeviceHeaders(),
     },
   });
 
@@ -132,6 +145,7 @@ export async function acceptWorkerTerms(version: string, appVersion?: string | n
     headers: {
       "content-type": "application/json",
       Authorization: `Bearer ${token}`,
+      ...getWorkerDeviceHeaders(),
     },
     body: JSON.stringify({
       version,

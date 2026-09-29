@@ -31,6 +31,7 @@ async function installWorkerFixture(context) {
     exp: nowSeconds + 3600,
     role: 'authenticated',
     sub: fixtureUserId,
+    session_id: '22222222-2222-4222-8222-222222222222',
   })}.fixture-signature`;
   const user = {
     id: fixtureUserId,
@@ -75,6 +76,33 @@ async function installWorkerFixture(context) {
       { id: '1', event_type: 'CLOCK_IN', happened_at: '2026-09-23T08:30:00+02:00' },
     ],
   }));
+  await context.route('**/functions/v1/worker-data/profile*', (route) => route.fulfill({
+    json: {
+      ok: true,
+      data: {
+        id: fixtureUserId,
+        full_name: 'Trabajador de auditoria',
+        role: 'worker',
+        is_active: true,
+        relationship_type: relationshipType,
+        email: user.email,
+        password_reset_required: false,
+        password_reset_deadline: null,
+        password_changed_at: new Date().toISOString(),
+      },
+    },
+  }));
+  await context.route('**/functions/v1/worker-data/events*', (route) => route.fulfill({
+    json: {
+      ok: true,
+      data: [
+        { id: '4', event_type: 'CLOCK_OUT', happened_at: '2026-09-23T16:30:00+02:00' },
+        { id: '3', event_type: 'BREAK_END', happened_at: '2026-09-23T13:30:00+02:00' },
+        { id: '2', event_type: 'BREAK_START', happened_at: '2026-09-23T13:00:00+02:00' },
+        { id: '1', event_type: 'CLOCK_IN', happened_at: '2026-09-23T08:30:00+02:00' },
+      ],
+    },
+  }));
   await context.route('**/functions/v1/worker-terms*', (route) => route.fulfill({
     json: {
       ok: true,
@@ -82,9 +110,20 @@ async function installWorkerFixture(context) {
         accepted: true,
         acceptance: {
           id: 'fixture-acceptance',
-          version: relationshipType === 'EXTERNAL' ? 'v1.1-2026-03-05-external-v1' : 'v1.1-2026-03-05',
+          version: relationshipType === 'EXTERNAL' ? 'v1.2-2026-09-29-external-v1' : 'v1.2-2026-09-29',
           accepted_at: new Date().toISOString(),
         },
+      },
+    },
+  }));
+  await context.route('**/functions/v1/worker-session*', (route) => route.fulfill({
+    json: {
+      ok: true,
+      data: {
+        valid: true,
+        device_changed: false,
+        first_registration: false,
+        device_label: 'Google Chrome en Windows',
       },
     },
   }));

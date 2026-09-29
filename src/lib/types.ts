@@ -18,6 +18,59 @@ export interface DashboardMetrics {
     phone_number?: string | null;
     detected_at: string;
   }>;
+  open_security_alerts_count: number;
+}
+
+export interface SessionWorkerRef {
+  id: string;
+  full_name: string;
+  email: string;
+  relationship_type: WorkerRelationshipType;
+  is_active: boolean;
+}
+
+export interface WorkerDeviceSession {
+  user_id: string;
+  device_fingerprint: string;
+  device_label: string;
+  browser?: string | null;
+  platform?: string | null;
+  user_agent?: string | null;
+  ip?: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  updated_at: string;
+  worker: SessionWorkerRef | null;
+}
+
+export interface WorkerSecurityAlert {
+  id: string;
+  user_id: string;
+  alert_type: "DEVICE_CHANGED";
+  status: "OPEN" | "ACKNOWLEDGED";
+  previous_device: Record<string, unknown>;
+  current_device: Record<string, unknown>;
+  detected_at: string;
+  acknowledged_at?: string | null;
+  acknowledged_by?: string | null;
+  worker: SessionWorkerRef | null;
+}
+
+export interface WorkerSessionAudit {
+  id: string;
+  user_id: string;
+  action: "INITIAL_LOGIN" | "LOGIN" | "DEVICE_CHANGED";
+  previous_device?: Record<string, unknown> | null;
+  current_device: Record<string, unknown>;
+  ip?: string | null;
+  created_at: string;
+  worker: SessionWorkerRef | null;
+}
+
+export interface AdminSessionsData {
+  sessions: WorkerDeviceSession[];
+  alerts: WorkerSecurityAlert[];
+  audit: WorkerSessionAudit[];
 }
 
 export interface WorkerSummary {

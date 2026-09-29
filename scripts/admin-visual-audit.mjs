@@ -4,6 +4,7 @@ import path from 'node:path';
 
 const baseUrl = process.env.ADMIN_AUDIT_URL || 'http://127.0.0.1:5173';
 const outputDir = path.resolve('.artifacts/admin-audit');
+const useSessionFixture = process.env.ADMIN_AUDIT_SESSION_FIXTURE === 'true';
 
 async function readLocalEnv() {
   const source = await readFile('.env', 'utf8');
@@ -69,6 +70,52 @@ if (!email || !password) {
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const context = await browser.newContext({ locale: 'es-ES', timezoneId: 'Europe/Madrid' });
+if (useSessionFixture) {
+  await context.route('**/functions/v1/admin-sessions*', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      return route.fulfill({ json: { ok: true, data: { id: 'alert-1', status: 'ACKNOWLEDGED', acknowledged_at: new Date().toISOString() } } });
+    }
+    return route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          sessions: [{
+            user_id: 'worker-1',
+            device_fingerprint: 'a1b2c3d4e5f6',
+            device_label: 'Google Chrome en Android',
+            browser: 'Google Chrome',
+            platform: 'Android',
+            ip: '198.51.100.10',
+            first_seen_at: '2026-09-29T07:30:00Z',
+            last_seen_at: '2026-09-29T12:15:00Z',
+            updated_at: '2026-09-29T12:15:00Z',
+            worker: { id: 'worker-1', full_name: 'Usuario de auditoria', email: 'auditoria@onusexpress.com', relationship_type: 'EMPLOYEE', is_active: true },
+          }],
+          alerts: [{
+            id: 'alert-1',
+            user_id: 'worker-1',
+            alert_type: 'DEVICE_CHANGED',
+            status: 'OPEN',
+            previous_device: { device_label: 'Safari en iOS' },
+            current_device: { device_label: 'Google Chrome en Android' },
+            detected_at: '2026-09-29T12:15:00Z',
+            worker: { id: 'worker-1', full_name: 'Usuario de auditoria', email: 'auditoria@onusexpress.com', relationship_type: 'EMPLOYEE', is_active: true },
+          }],
+          audit: [{
+            id: 'audit-1',
+            user_id: 'worker-1',
+            action: 'DEVICE_CHANGED',
+            previous_device: { device_label: 'Safari en iOS' },
+            current_device: { device_label: 'Google Chrome en Android' },
+            ip: '198.51.100.10',
+            created_at: '2026-09-29T12:15:00Z',
+            worker: { id: 'worker-1', full_name: 'Usuario de auditoria', email: 'auditoria@onusexpress.com', relationship_type: 'EMPLOYEE', is_active: true },
+          }],
+        },
+      },
+    });
+  });
+}
 const page = await context.newPage();
 
 try {
@@ -85,7 +132,7 @@ try {
   const desktop = { width: 1600, height: 900 };
   const compact = { width: 1280, height: 800 };
   const mobile = { width: 390, height: 844 };
-  const screens = ['dashboard', 'trabajadores', 'incidencias', 'exports', 'ajustes'];
+  const screens = ['dashboard', 'trabajadores', 'incidencias', 'sesiones', 'exports', 'ajustes'];
 
   for (const screen of screens) {
     await navigate(page, screen);

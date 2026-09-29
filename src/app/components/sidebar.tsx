@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Download, Settings, Menu, X, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Users, Download, Settings, Menu, X, AlertTriangle, MonitorSmartphone } from 'lucide-react';
 import { Page } from '@/app/App';
 import { useState } from 'react';
 import logo from '@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png';
@@ -15,6 +15,7 @@ const menuItems = [
   { id: 'dashboard' as Page, label: TEXTS.nav.dashboard, icon: LayoutDashboard },
   { id: 'trabajadores' as Page, label: TEXTS.nav.trabajadores, icon: Users, section: TEXTS.nav.administracion },
   { id: 'incidencias' as Page, label: TEXTS.nav.incidencias, icon: AlertTriangle },
+  { id: 'sesiones' as Page, label: 'Sesiones', icon: MonitorSmartphone },
   { id: 'exports' as Page, label: TEXTS.nav.exports, icon: Download },
   { id: 'ajustes' as Page, label: TEXTS.nav.ajustes, icon: Settings },
 ];

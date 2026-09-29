@@ -57,6 +57,20 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
         </button>
       </div>
 
+      {!loading && !error && (data?.open_security_alerts_count ?? 0) > 0 && (
+        <button
+          type="button"
+          onClick={() => onNavigate('sesiones')}
+          className="mb-5 flex w-full items-center justify-between gap-3 border-l-4 border-[#dc2626] bg-[#fff7f7] px-4 py-3 text-left"
+        >
+          <span className="inline-flex items-center gap-2 font-semibold text-[#991b1b]">
+            <AlertTriangle className="h-5 w-5" />
+            {data?.open_security_alerts_count} {data?.open_security_alerts_count === 1 ? 'cambio de dispositivo pendiente' : 'cambios de dispositivo pendientes'}
+          </span>
+          <span className="text-sm font-semibold text-[#00AEB3]">Revisar sesiones</span>
+        </button>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 items-start gap-4">
         <MetricCard
           title={TEXTS.dashboard.cards.activeWorkers}

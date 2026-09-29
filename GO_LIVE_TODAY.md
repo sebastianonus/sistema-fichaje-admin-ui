@@ -11,7 +11,7 @@
 ## 1. Configuracion minima de produccion
 - Definir `VITE_SUPABASE_URL` de produccion.
 - Definir `VITE_SUPABASE_ANON_KEY` de produccion.
-- Definir `VITE_WORKER_TERMS_VERSION` de produccion (ejemplo: `v1.1-2026-03-05`).
+- La version de condiciones se fija en codigo para garantizar su renovacion (`v1.2-2026-09-29`).
 - Mantener `VITE_ENABLE_STATIC_ADMIN_TOKEN=false` en produccion.
 - No usar `VITE_ADMIN_BEARER_TOKEN` en frontend de produccion.
 - Opcional: configurar `VITE_WORKER_TERMS_DOC_URL` y `VITE_WORKER_PRIVACY_DOC_URL` para mostrar enlaces directos en la aceptacion worker.

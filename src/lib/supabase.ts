@@ -1,16 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
 import { TEXTS } from "@/constants/texts";
+import { registerWorkerDeviceSession } from "@/lib/device-session";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const forceWorkerMode = (import.meta.env.VITE_FORCE_WORKER_MODE as string | undefined) === "true";
 const workerStorageKey = "onus-auth-worker";
 
+export function isWorkerClient() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return forceWorkerMode || host.includes("worker") || window.location.pathname.startsWith("/worker");
+}
+
 function getAuthStorageKey() {
   if (typeof window === "undefined") return "onus-auth-admin";
-  const host = window.location.hostname.toLowerCase();
-  const isWorkerDomain = host.includes("worker");
-  return (forceWorkerMode || isWorkerDomain || window.location.pathname.startsWith("/worker"))
+  return isWorkerClient()
     ? workerStorageKey
     : "onus-auth-admin";
 }
@@ -112,7 +117,17 @@ export async function ensureRole(role: UserRole) {
 
 export async function signInWithRole(email: string, password: string, role: UserRole) {
   const session = await signInWithEmailPassword(email, password);
-  await ensureRole(role);
+  try {
+    if (role === "worker") {
+      if (!session?.access_token) throw new Error(TEXTS.api.missingSession);
+      await registerWorkerDeviceSession(session.access_token);
+    } else {
+      await ensureRole(role);
+    }
+  } catch (error) {
+    await signOutAdmin();
+    throw error;
+  }
   return session;
 }
 
@@ -121,12 +136,16 @@ export async function changeCurrentUserPassword(currentPassword: string, newPass
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData.user) throw new Error(TEXTS.api.unauthenticatedUser);
   if (!userData.user.email) throw new Error(TEXTS.api.missingUserEmail);
+  const workerClient = isWorkerClient();
 
-  const { error: verifyErr } = await supabase.auth.signInWithPassword({
+  const { data: verifiedData, error: verifyErr } = await supabase.auth.signInWithPassword({
     email: userData.user.email,
     password: currentPassword,
   });
   if (verifyErr) throw new Error(TEXTS.api.invalidCurrentPassword);
+  if (workerClient && verifiedData.session?.access_token) {
+    await registerWorkerDeviceSession(verifiedData.session.access_token);
+  }
 
   const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
   if (updateErr) throw updateErr;

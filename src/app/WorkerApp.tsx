@@ -1,9 +1,10 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
-import { changeCurrentUserPassword, ensureRole, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
+import { changeCurrentUserPassword, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
 import { acceptWorkerTerms, getMyTimeEvents, getWorkerProfile, getWorkerTermsStatus, sendClockEvent } from "@/lib/worker-api";
 import { buildEffectiveTimeEvents } from "@/lib/time-events";
 import { formatClockEventLabel } from "@/lib/time-event-labels";
+import { isSessionReplacedError, validateWorkerDeviceSession } from "@/lib/device-session";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import { TEXTS } from "@/constants/texts";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
@@ -44,29 +45,33 @@ type ClockLocation = {
 
 const SHIFT_TARGET_MINUTES = 450;
 const SHIFT_REMINDER_BUFFER_MINUTES = 15;
-const WORKER_TERMS_VERSION = (import.meta.env.VITE_WORKER_TERMS_VERSION as string | undefined)?.trim() || "v1.1-2026-03-05";
+const WORKER_TERMS_VERSION = "v1.2-2026-09-29";
 const WORKER_TERMS_DOC_URL = (import.meta.env.VITE_WORKER_TERMS_DOC_URL as string | undefined)?.trim() || "";
 const WORKER_PRIVACY_DOC_URL = (import.meta.env.VITE_WORKER_PRIVACY_DOC_URL as string | undefined)?.trim() || "";
 const APP_VERSION_LABEL = (import.meta.env.VITE_APP_VERSION as string | undefined)?.trim() || "worker-portal";
 const WORKER_TERMS_READING_TEXT = [
   "1. Uso del sistema: El portal de fichaje solo puede utilizarse para registrar de forma veraz tu hora de entrada, pausa y salida durante tu jornada laboral.",
-  "2. Cuenta personal: Tus credenciales son personales e intransferibles. No compartas tu email ni tu contrasena con terceros.",
-  "3. Veracidad del fichaje: Debes fichar en el momento real de inicio y fin de trabajo. Queda prohibido fichar por otra persona o manipular registros.",
-  "4. Geolocalizacion: El sistema puede registrar ubicacion y precision GPS unicamente para verificar la trazabilidad del fichaje.",
-  "5. Correcciones e incidencias: Si detectas un error, debes comunicarlo a administracion para su revision y, si procede, correccion auditada.",
-  "6. Proteccion de datos: Los datos de fichaje se tratan para control horario, cumplimiento normativo y gestion laboral interna.",
-  "7. Conservacion y acceso: La empresa conserva los registros segun la normativa aplicable. Puedes ejercer tus derechos de proteccion de datos por los canales internos.",
-  "8. Aceptacion: Al marcar la casilla y continuar, declaras que has leido y comprendido estas condiciones y la informacion de proteccion de datos.",
+  "2. Credenciales personales: Esta prohibido compartir el email, la contrasena o cualquier medio de acceso. La cuenta es personal e intransferible.",
+  "3. Dispositivo autorizado: Solo puedes iniciar sesion desde un dispositivo de tu propiedad y bajo tu control exclusivo. No se permite utilizar dispositivos publicos, compartidos o de terceros.",
+  "4. Una sola sesion: Solo puede existir una sesion activa por cuenta. Al acceder desde otro dispositivo, la sesion anterior quedara sustituida y administracion recibira una alerta.",
+  "5. Datos de seguridad: Se registran el identificador tecnico del dispositivo, navegador, plataforma, direccion IP y fechas de acceso para prevenir usos indebidos y mantener la auditoria.",
+  "6. Veracidad del fichaje: Debes fichar en el momento real de inicio y fin de trabajo. Queda prohibido fichar por otra persona o manipular registros.",
+  "7. Geolocalizacion: El sistema puede registrar ubicacion y precision GPS unicamente para verificar la trazabilidad del fichaje.",
+  "8. Correcciones e incidencias: Si detectas un error, debes comunicarlo a administracion para su revision y, si procede, correccion auditada.",
+  "9. Proteccion de datos: Los datos se tratan para control horario, seguridad de acceso, cumplimiento normativo y gestion laboral interna, y se conservan durante los plazos aplicables.",
+  "10. Aceptacion: Al marcar la casilla y continuar, declaras que has leido y comprendido estas condiciones y la informacion de proteccion de datos.",
 ].join("\n\n");
 const EXTERNAL_TERMS_READING_TEXT = [
   "1. Uso del sistema: El portal se utiliza para registrar de forma veraz el inicio, las pausas y el final de los servicios prestados.",
-  "2. Cuenta personal: Tus credenciales son personales e intransferibles. No compartas tu email ni tu contrasena con terceros.",
-  "3. Veracidad del registro: Debes registrar cada accion en el momento real. Queda prohibido registrar servicios por otra persona o manipular los datos.",
-  "4. Geolocalizacion: El sistema puede registrar ubicacion y precision GPS unicamente para acreditar la trazabilidad de la prestacion.",
-  "5. Correcciones: Si detectas un error, debes comunicarlo a administracion para su revision y, si procede, correccion auditada.",
-  "6. Finalidad de los datos: Los registros se tratan para verificar los servicios prestados y conciliarlos con los periodos facturados.",
-  "7. Naturaleza de la relacion: Este registro no altera la naturaleza mercantil de la colaboracion ni supone por si mismo una relacion laboral.",
-  "8. Aceptacion: Al marcar la casilla y continuar, declaras que has leido y comprendido estas condiciones y la informacion de proteccion de datos.",
+  "2. Credenciales personales: Esta prohibido compartir el email, la contrasena o cualquier medio de acceso. La cuenta es personal e intransferible.",
+  "3. Dispositivo autorizado: Solo puedes iniciar sesion desde un dispositivo de tu propiedad y bajo tu control exclusivo. No se permite utilizar dispositivos publicos, compartidos o de terceros.",
+  "4. Una sola sesion: Solo puede existir una sesion activa por cuenta. Al acceder desde otro dispositivo, la sesion anterior quedara sustituida y administracion recibira una alerta.",
+  "5. Datos de seguridad: Se registran el identificador tecnico del dispositivo, navegador, plataforma, direccion IP y fechas de acceso para prevenir usos indebidos y mantener la auditoria.",
+  "6. Veracidad del registro: Debes registrar cada accion en el momento real. Queda prohibido registrar servicios por otra persona o manipular los datos.",
+  "7. Geolocalizacion: El sistema puede registrar ubicacion y precision GPS unicamente para acreditar la trazabilidad de la prestacion.",
+  "8. Correcciones: Si detectas un error, debes comunicarlo a administracion para su revision y, si procede, correccion auditada.",
+  "9. Finalidad de los datos: Los registros se tratan para verificar los servicios prestados, conciliarlos con los periodos facturados y proteger el acceso a la cuenta.",
+  "10. Naturaleza y aceptacion: El registro no altera la naturaleza mercantil de la colaboracion. Al continuar, declaras haber leido estas condiciones y la informacion de proteccion de datos.",
 ].join("\n\n");
 
 function termsVersionFor(relationshipType?: WorkerProfile["relationship_type"]) {
@@ -415,11 +420,12 @@ export default function WorkerApp() {
       }
 
       try {
-        await ensureRole("worker");
+        await validateWorkerDeviceSession(data.session!.access_token);
         setAuthed(true);
         const loadedProfile = await load();
         await loadTermsStatus(loadedProfile?.relationship_type);
       } catch (err) {
+        await signOutAdmin();
         setAuthed(false);
         setError(err instanceof Error ? err.message : t.errors.invalidSession);
       } finally {
@@ -429,6 +435,24 @@ export default function WorkerApp() {
 
     boot();
   }, []);
+
+  useEffect(() => {
+    if (!authed || !supabase) return;
+    const id = window.setInterval(async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session?.access_token) throw new Error(t.errors.invalidSession);
+        await validateWorkerDeviceSession(data.session.access_token);
+      } catch (err) {
+        await signOutAdmin();
+        setAuthed(false);
+        setProfile(null);
+        setEvents([]);
+        setError(err instanceof Error ? err.message : t.errors.invalidSession);
+      }
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [authed, t.errors.invalidSession]);
 
   useEffect(() => {
     if (!authed) return;
@@ -584,7 +608,15 @@ export default function WorkerApp() {
       await load();
     } catch (err) {
       const message = err instanceof Error ? err.message : t.errors.clockError;
-      await load();
+      const sessionWasReplaced = isSessionReplacedError(err) || message.includes("sesion ha sido sustituida");
+      if (sessionWasReplaced) {
+        await signOutAdmin();
+        setAuthed(false);
+        setProfile(null);
+        setEvents([]);
+      } else {
+        await load();
+      }
       setError(message);
     } finally {
       setActionLoading(false);
@@ -870,7 +902,7 @@ export default function WorkerApp() {
                   disabled={termsChecking || termsSubmitting}
                 />
                 <span>
-                  He leido y acepto las condiciones de uso del sistema de registro y declaro haber recibido la informacion de proteccion de datos.
+                  He leido y acepto las condiciones de uso, incluida la prohibicion de compartir credenciales y de acceder desde dispositivos ajenos o compartidos, y declaro haber recibido la informacion de proteccion de datos.
                 </span>
               </label>
 
