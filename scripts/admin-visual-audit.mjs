@@ -49,9 +49,22 @@ async function capture(page, name, viewport) {
   await page.waitForTimeout(150);
   const overflow = await page.evaluate(() => {
     const main = document.querySelector('main');
+    const viewportWidth = document.documentElement.clientWidth;
+    const offenders = [...document.querySelectorAll('body *')]
+      .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.right > viewportWidth + 1 || rect.left < -1)
+      .slice(0, 5)
+      .map(({ element, rect }) => ({
+        tag: element.tagName.toLowerCase(),
+        className: typeof element.className === 'string' ? element.className.slice(0, 120) : '',
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+        width: Math.round(rect.width),
+      }));
     return {
       body: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       main: main ? main.scrollWidth - main.clientWidth : 0,
+      offenders,
     };
   });
   if (overflow.body > 1 || overflow.main > 1) {
@@ -96,8 +109,8 @@ if (useSessionFixture) {
             user_id: 'worker-1',
             alert_type: 'DEVICE_CHANGED',
             status: 'OPEN',
-            previous_device: { device_label: 'Safari en iOS' },
-            current_device: { device_label: 'Google Chrome en Android' },
+            previous_device: { device_label: 'Safari en iOS', ip: '198.51.100.8' },
+            current_device: { device_label: 'Google Chrome en Android', ip: '198.51.100.10' },
             detected_at: '2026-09-29T12:15:00Z',
             worker: { id: 'worker-1', full_name: 'Usuario de auditoria', email: 'auditoria@onusexpress.com', relationship_type: 'EMPLOYEE', is_active: true },
           }],
@@ -105,8 +118,8 @@ if (useSessionFixture) {
             id: 'audit-1',
             user_id: 'worker-1',
             action: 'DEVICE_CHANGED',
-            previous_device: { device_label: 'Safari en iOS' },
-            current_device: { device_label: 'Google Chrome en Android' },
+            previous_device: { device_label: 'Safari en iOS', ip: '198.51.100.8' },
+            current_device: { device_label: 'Google Chrome en Android', ip: '198.51.100.10' },
             ip: '198.51.100.10',
             created_at: '2026-09-29T12:15:00Z',
             worker: { id: 'worker-1', full_name: 'Usuario de auditoria', email: 'auditoria@onusexpress.com', relationship_type: 'EMPLOYEE', is_active: true },

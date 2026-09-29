@@ -141,14 +141,14 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen w-full overflow-hidden bg-white">
       <Sidebar
         currentPage={currentPage}
         onNavigate={navigateTo}
         showLogout={!hasStaticAdminToken()}
         onLogout={handleLogout}
       />
-      <main className="admin-content min-w-0 flex-1 overflow-auto pt-16 lg:pt-0">
+      <main className="admin-content w-0 min-w-0 flex-1 overflow-auto pt-16 lg:pt-0">
         {currentPage === 'dashboard' && (
           <Dashboard
             onNavigate={navigateTo}

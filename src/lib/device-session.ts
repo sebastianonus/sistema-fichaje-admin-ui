@@ -68,7 +68,7 @@ function sessionErrorMessage(code: string) {
   return "No se pudo validar este dispositivo. Intentalo de nuevo.";
 }
 
-async function requestWorkerSession(accessToken: string, method: "GET" | "POST") {
+async function requestWorkerSession(accessToken: string, method: "GET" | "POST" | "DELETE") {
   const response = await fetch(`${getFunctionsBaseUrl()}/worker-session`, {
     method,
     headers: {
@@ -96,6 +96,10 @@ export function registerWorkerDeviceSession(accessToken: string) {
 
 export function validateWorkerDeviceSession(accessToken: string) {
   return requestWorkerSession(accessToken, "GET");
+}
+
+export function logoutWorkerDeviceSession(accessToken: string) {
+  return requestWorkerSession(accessToken, "DELETE");
 }
 
 export function isSessionReplacedError(error: unknown) {

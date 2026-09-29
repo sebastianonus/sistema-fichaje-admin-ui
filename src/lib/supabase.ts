@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { TEXTS } from "@/constants/texts";
-import { registerWorkerDeviceSession } from "@/lib/device-session";
+import { logoutWorkerDeviceSession, registerWorkerDeviceSession } from "@/lib/device-session";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -84,6 +84,19 @@ export async function signInWithEmailPassword(email: string, password: string) {
 
 export async function signOutAdmin() {
   if (!supabase) return;
+  await supabase.auth.signOut();
+}
+
+export async function signOutWorker() {
+  if (!supabase) return;
+  const { data } = await supabase.auth.getSession();
+  if (data.session?.access_token) {
+    try {
+      await logoutWorkerDeviceSession(data.session.access_token);
+    } catch {
+      // Local sign-out must still complete if the audit endpoint is unavailable.
+    }
+  }
   await supabase.auth.signOut();
 }
 

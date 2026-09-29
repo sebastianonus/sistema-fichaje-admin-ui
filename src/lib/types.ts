@@ -59,7 +59,7 @@ export interface WorkerSecurityAlert {
 export interface WorkerSessionAudit {
   id: string;
   user_id: string;
-  action: "INITIAL_LOGIN" | "LOGIN" | "DEVICE_CHANGED";
+  action: "INITIAL_LOGIN" | "LOGIN" | "LOGOUT" | "DEVICE_CHANGED";
   previous_device?: Record<string, unknown> | null;
   current_device: Record<string, unknown>;
   ip?: string | null;

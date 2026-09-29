@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
-import { changeCurrentUserPassword, signInWithRole, signOutAdmin, supabase } from "@/lib/supabase";
+import { changeCurrentUserPassword, signInWithRole, signOutAdmin, signOutWorker, supabase } from "@/lib/supabase";
 import { acceptWorkerTerms, getMyTimeEvents, getWorkerProfile, getWorkerTermsStatus, sendClockEvent } from "@/lib/worker-api";
 import { buildEffectiveTimeEvents } from "@/lib/time-events";
 import { formatClockEventLabel } from "@/lib/time-event-labels";
@@ -624,7 +624,7 @@ export default function WorkerApp() {
   };
 
   const handleLogout = async () => {
-    await signOutAdmin();
+    await signOutWorker();
     setAuthed(false);
     setProfile(null);
     setEvents([]);
