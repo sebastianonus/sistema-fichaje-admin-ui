@@ -7,7 +7,13 @@ type View = 'devices' | 'history';
 
 function formatDate(value?: string | null) {
   if (!value) return '-';
-  return new Date(value).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+  return new Date(value).toLocaleString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function deviceName(snapshot: Record<string, unknown> | null | undefined) {
@@ -15,9 +21,9 @@ function deviceName(snapshot: Record<string, unknown> | null | undefined) {
 }
 
 const auditLabels = {
-  INITIAL_LOGIN: 'Primer acceso registrado',
-  LOGIN: 'Inicio de sesion',
-  DEVICE_CHANGED: 'Cambio de dispositivo',
+  INITIAL_LOGIN: 'Dispositivo autorizado',
+  LOGIN: 'Inicio de sesión',
+  DEVICE_CHANGED: 'Dispositivo sustituido',
 } as const;
 
 export function Sesiones() {
@@ -110,7 +116,7 @@ export function Sesiones() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="inline-grid grid-cols-2 rounded-lg border border-[#dbe3eb] bg-white p-1" role="tablist" aria-label="Vista de sesiones">
           <button type="button" role="tab" aria-selected={view === 'devices'} onClick={() => setView('devices')} className={`inline-flex min-h-9 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${view === 'devices' ? 'bg-[#000935] text-white' : 'text-[#475569] hover:bg-[#f5f7fa]'}`}>
-            <MonitorSmartphone className="h-4 w-4" /> Dispositivos activos
+            <MonitorSmartphone className="h-4 w-4" /> Sesiones activas
           </button>
           <button type="button" role="tab" aria-selected={view === 'history'} onClick={() => setView('history')} className={`inline-flex min-h-9 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold ${view === 'history' ? 'bg-[#000935] text-white' : 'text-[#475569] hover:bg-[#f5f7fa]'}`}>
             <History className="h-4 w-4" /> Historial
@@ -128,16 +134,16 @@ export function Sesiones() {
           <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="bg-[#f8fafc] text-xs uppercase text-[#64748b]">
               {view === 'devices' ? (
-                <tr><th className="px-4 py-3">Usuario</th><th className="px-4 py-3">Dispositivo</th><th className="px-4 py-3">IP</th><th className="px-4 py-3">Primera actividad</th><th className="px-4 py-3">Ultima actividad</th></tr>
+                <tr><th className="px-4 py-3">Usuario</th><th className="px-4 py-3">Dispositivo autorizado</th><th className="px-4 py-3">Última IP</th><th className="px-4 py-3">Autorizado desde</th><th className="px-4 py-3">Última verificación</th></tr>
               ) : (
-                <tr><th className="px-4 py-3">Fecha</th><th className="px-4 py-3">Usuario</th><th className="px-4 py-3">Accion</th><th className="px-4 py-3">Dispositivo</th><th className="px-4 py-3">IP</th></tr>
+                <tr><th className="px-4 py-3">Fecha</th><th className="px-4 py-3">Usuario</th><th className="px-4 py-3">Acción</th><th className="px-4 py-3">Dispositivo</th><th className="px-4 py-3">IP</th></tr>
               )}
             </thead>
             <tbody className="divide-y divide-[#e5e7eb] bg-white">
               {view === 'devices' ? sessions.map((session) => (
                 <tr key={session.user_id}>
                   <td className="px-4 py-3"><div className="font-semibold text-[#000935]">{session.worker?.full_name || '-'}</div><div className="text-xs text-[#64748b]">{session.worker?.email || '-'}</div></td>
-                  <td className="px-4 py-3"><div>{session.device_label}</div><div className="text-xs text-[#64748b]">ID {session.device_fingerprint}</div></td>
+                  <td className="px-4 py-3">{session.device_label}</td>
                   <td className="px-4 py-3">{session.ip || '-'}</td><td className="px-4 py-3">{formatDate(session.first_seen_at)}</td><td className="px-4 py-3">{formatDate(session.last_seen_at)}</td>
                 </tr>
               )) : audit.map((entry) => (
