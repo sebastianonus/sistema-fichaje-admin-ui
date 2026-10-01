@@ -215,6 +215,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
               detected_at: item.detected_at,
               note: item.note,
             });
+            const isWarning = incidentView.tone === "warning";
 
             return (
             <div key={item.id} className="bg-white border border-[#e5e5e5] rounded-lg p-3.5">
@@ -225,7 +226,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                   <div className="text-sm text-[#666666]">{item.worker_email}{item.worker_phone_number ? ` | ${item.worker_phone_number}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`inline-flex px-2 py-1 rounded-full text-xs ${item.status === "OPEN" ? "bg-[#fef2f2] text-[#dc2626]" : "bg-[#ecfeff] text-[#0f766e]"}`}>
+                  <span className={`inline-flex px-2 py-1 rounded-full text-xs ${item.status === "OPEN" ? (isWarning ? "bg-[#fff7ed] text-[#c2410c]" : "bg-[#fef2f2] text-[#dc2626]") : "bg-[#ecfeff] text-[#0f766e]"}`}>
                     {item.status === "OPEN"
                       ? TEXTS.incidencias.table.states.open
                       : item.status === "RESOLVED"
@@ -260,10 +261,10 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                 </div>
                 <div>
                   <div className="text-[#666666]">{incidentView.actionLabel}</div>
-                  <div className="font-semibold text-[#dc2626]">{incidentView.correctionButton}</div>
+                  <div className={`font-semibold ${isWarning ? "text-[#c2410c]" : "text-[#dc2626]"}`}>{incidentView.correctionButton}</div>
                 </div>
-                <div className="md:col-span-5 rounded-lg bg-[#fff7f7] border border-[#fecaca] px-3 py-2 flex flex-wrap gap-x-2 text-sm">
-                  <span className="text-[#991b1b] font-semibold">{incidentView.problemLabel}:</span>
+                <div className={`md:col-span-5 rounded-lg border px-3 py-2 flex flex-wrap gap-x-2 text-sm ${isWarning ? "border-[#fed7aa] bg-[#fff7ed]" : "border-[#fecaca] bg-[#fff7f7]"}`}>
+                  <span className={`font-semibold ${isWarning ? "text-[#9a3412]" : "text-[#991b1b]"}`}>{incidentView.problemLabel}:</span>
                   <span className="text-[#000935]">{incidentView.description}</span>
                 </div>
               </div>

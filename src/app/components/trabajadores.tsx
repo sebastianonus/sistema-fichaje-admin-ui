@@ -686,7 +686,11 @@ export function Trabajadores({ preset, onOpenWorkerDetail }: TrabajadoresProps) 
                       <td className="px-3 py-2.5">
                         {worker.open_incident ? (
                           <div className="flex flex-col">
-                            <span className="inline-flex px-2 py-1 text-xs rounded-full bg-[#fef2f2] text-[#dc2626]">
+                            <span className={`inline-flex px-2 py-1 text-xs rounded-full ${getIncidentView({
+                              incident_type: worker.open_incident.incident_type,
+                              status: 'OPEN',
+                              detected_at: worker.open_incident.detected_at,
+                            }).tone === 'warning' ? 'bg-[#fff7ed] text-[#c2410c]' : 'bg-[#fef2f2] text-[#dc2626]'}`}>
                               {getIncidentView({
                                 incident_type: worker.open_incident.incident_type,
                                 status: 'OPEN',

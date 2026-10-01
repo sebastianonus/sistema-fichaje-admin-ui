@@ -22,6 +22,7 @@ export type IncidentViewInput = {
 };
 
 export type IncidentViewModel = {
+  tone: "danger" | "warning" | "neutral";
   title: string;
   shortTitle: string;
   problemLabel: string;
@@ -205,13 +206,14 @@ export function getIncidentView(input: IncidentViewInput): IncidentViewModel {
   const technicalType = input.incident_type || "INCIDENT";
   const technicalEvent = eventType && eventAt ? `${eventType} - ${formatIncidentDateTime(eventAt)}` : null;
 
-  if (technicalType === "LONG_OPEN_SHIFT" && currentOutAt) {
+  if (technicalType === "SHIFT_OVERRUN" || (technicalType === "LONG_OPEN_SHIFT" && currentOutAt)) {
     return {
-      title: "Accion necesaria: ajustar salida",
-      shortTitle: "Ajustar salida",
+      tone: "warning",
+      title: "Horario excedido",
+      shortTitle: "Horario excedido",
       problemLabel: "Problema",
-      description: "La salida registrada deja una jornada superior a 7h30.",
-      recommendedAction: "Ajustar la hora de salida y resolver la incidencia.",
+      description: "La salida registrada supera la jornada estipulada de 7h30.",
+      recommendedAction: "Revisar la salida y ajustarla si corresponde.",
       eventToCorrect: "CLOCK_OUT",
       correctionButton: "Ajustar salida y resolver",
       primaryTimeLabel: "Entrada registrada",
@@ -234,6 +236,7 @@ export function getIncidentView(input: IncidentViewInput): IncidentViewModel {
 
   if (technicalType === "LONG_OPEN_SHIFT") {
     return {
+      tone: "danger",
       title: "Accion necesaria: registrar salida",
       shortTitle: "Falta salida",
       problemLabel: "Problema",
@@ -260,6 +263,7 @@ export function getIncidentView(input: IncidentViewInput): IncidentViewModel {
   }
 
   return {
+    tone: "neutral",
     title: "Incidencia de fichaje",
     shortTitle: "Revisar fichaje",
     problemLabel: "Problema",

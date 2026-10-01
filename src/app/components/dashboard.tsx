@@ -131,13 +131,16 @@ export function Dashboard({ onNavigate, onOpenWorkersFiltered }: DashboardProps)
           <div className="text-2xl font-bold text-[#000935]">{data?.open_incidents_count ?? TEXTS.common.noData}</div>
           {!!data?.open_incidents?.length && (
             <div className="mt-4 space-y-2">
-              {data.open_incidents.slice(0, 3).map((incident) => (
-                <div key={`${incident.id}-${incident.detected_at}`} className="text-sm">
-                  <div className="font-medium text-[#000935]">{incident.full_name}</div>
-                  <div className="text-[#dc2626]">{getIncidentView({ incident_type: incident.incident_type, status: 'OPEN' }).shortTitle}</div>
-                  <div className="text-[#666666]">{formatIncidentDateTime(incident.detected_at)}</div>
-                </div>
-              ))}
+              {data.open_incidents.slice(0, 3).map((incident) => {
+                const view = getIncidentView({ incident_type: incident.incident_type, status: 'OPEN' });
+                return (
+                  <div key={`${incident.id}-${incident.detected_at}`} className="text-sm">
+                    <div className="font-medium text-[#000935]">{incident.full_name}</div>
+                    <div className={view.tone === 'warning' ? 'text-[#c2410c]' : 'text-[#dc2626]'}>{view.shortTitle}</div>
+                    <div className="text-[#666666]">{formatIncidentDateTime(incident.detected_at)}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </MetricCard>
