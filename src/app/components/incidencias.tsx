@@ -216,6 +216,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
               note: item.note,
             });
             const isWarning = incidentView.tone === "warning";
+            const showPause = incidentView.breakValue !== "-";
 
             return (
             <div key={item.id} className="bg-white border border-[#e5e5e5] rounded-lg p-3.5">
@@ -241,32 +242,25 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5 mt-2.5 text-sm">
+              <div className={`grid grid-cols-1 gap-2.5 mt-2.5 text-sm ${showPause ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
                 <div>
                   <div className="text-[#666666]">{incidentView.primaryTimeLabel}</div>
                   <div className="font-semibold text-[#000935]">{formatIncidentDateTime(incidentView.clockInAt)}</div>
                 </div>
                 <div>
                   <div className="text-[#666666]">{incidentView.targetTimeLabel}</div>
-                  <div className="font-semibold text-[#000935]">{formatIncidentDateTime(incidentView.suggestedOutAt)}</div>
-                  <div className="text-xs text-[#666666] mt-1">{incidentView.targetHelp}</div>
+                  <div className="font-semibold text-[#000935]">{formatIncidentDateTime(incidentView.currentOutAt ?? incidentView.suggestedOutAt)}</div>
                 </div>
                 <div>
                   <div className="text-[#666666]">{incidentView.netWorkedLabel}</div>
                   <div className="font-semibold text-[#000935]">{incidentView.netWorkedValue}</div>
                 </div>
-                <div>
-                  <div className="text-[#666666]">{incidentView.breakLabel}</div>
-                  <div className="font-semibold text-[#000935]">{incidentView.breakValue}</div>
-                </div>
-                <div>
-                  <div className="text-[#666666]">{incidentView.actionLabel}</div>
-                  <div className={`font-semibold ${isWarning ? "text-[#c2410c]" : "text-[#dc2626]"}`}>{incidentView.correctionButton}</div>
-                </div>
-                <div className={`md:col-span-5 rounded-lg border px-3 py-2 flex flex-wrap gap-x-2 text-sm ${isWarning ? "border-[#fed7aa] bg-[#fff7ed]" : "border-[#fecaca] bg-[#fff7f7]"}`}>
-                  <span className={`font-semibold ${isWarning ? "text-[#9a3412]" : "text-[#991b1b]"}`}>{incidentView.problemLabel}:</span>
-                  <span className="text-[#000935]">{incidentView.description}</span>
-                </div>
+                {showPause && (
+                  <div>
+                    <div className="text-[#666666]">{incidentView.breakLabel}</div>
+                    <div className="font-semibold text-[#000935]">{incidentView.breakValue}</div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-2.5 pt-2.5 border-t border-[#e5e5e5] flex items-center gap-3 text-sm">
@@ -312,7 +306,7 @@ export function Incidencias({ onOpenWorkerDetail }: IncidenciasProps) {
                     </div>
                     <div>
                       <div className="text-[#666666]">{view.targetTimeLabel}</div>
-                      <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.suggestedOutAt)}</div>
+                      <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.currentOutAt ?? view.suggestedOutAt)}</div>
                     </div>
                   </div>
                 </>

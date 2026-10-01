@@ -722,7 +722,7 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
                       note: incident.note,
                     });
                     const isWarning = view.tone === 'warning';
-                    const incidentTextClass = isWarning ? 'text-[#9a3412]' : 'text-[#7f1d1d]';
+                    const showPause = view.breakValue !== '-';
 
                     return (
                       <div
@@ -732,7 +732,6 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <div className={`font-semibold ${isWarning ? 'text-[#9a3412]' : 'text-[#991b1b]'}`}>{view.title}</div>
-                            <div className={`text-sm mt-1 ${incidentTextClass}`}>{view.description}</div>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {relatedEvent && (
@@ -747,28 +746,25 @@ export function WorkerDetailPage({ workerId, focusIncidentId, onBack }: WorkerDe
                             )}
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 mt-3 text-sm">
+                        <div className={`grid grid-cols-1 gap-3 mt-3 text-sm ${showPause ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
                           <div>
-                            <div className={incidentTextClass}>{view.primaryTimeLabel}</div>
+                            <div className="text-[#666666]">{view.primaryTimeLabel}</div>
                             <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.clockInAt)}</div>
                           </div>
                           <div>
-                            <div className={incidentTextClass}>{view.targetTimeLabel}</div>
-                            <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.suggestedOutAt)}</div>
-                            <div className={`text-xs mt-1 ${incidentTextClass}`}>{view.targetHelp}</div>
+                            <div className="text-[#666666]">{view.targetTimeLabel}</div>
+                            <div className="font-semibold text-[#000935]">{formatIncidentDateTime(view.currentOutAt ?? view.suggestedOutAt)}</div>
                           </div>
                           <div>
-                            <div className={incidentTextClass}>{view.netWorkedLabel}</div>
+                            <div className="text-[#666666]">{view.netWorkedLabel}</div>
                             <div className="font-semibold text-[#000935]">{view.netWorkedValue}</div>
                           </div>
-                          <div>
-                            <div className={incidentTextClass}>{view.breakLabel}</div>
-                            <div className="font-semibold text-[#000935]">{view.breakValue}</div>
-                          </div>
-                          <div>
-                            <div className={incidentTextClass}>{view.actionLabel}</div>
-                            <div className={`font-semibold ${isWarning ? 'text-[#c2410c]' : 'text-[#dc2626]'}`}>{view.correctionButton}</div>
-                          </div>
+                          {showPause && (
+                            <div>
+                              <div className="text-[#666666]">{view.breakLabel}</div>
+                              <div className="font-semibold text-[#000935]">{view.breakValue}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
