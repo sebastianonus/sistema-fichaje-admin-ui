@@ -124,7 +124,7 @@ export const TEXTS = {
     },
     shiftReminder: {
       title: 'Recuerda fichar la salida',
-      message: 'Tu jornada se acerca al limite de 7 horas y media. Cuando finalices, registra la salida para evitar errores.',
+      message: 'Tu jornada se acerca a las 8 horas. Recuerda registrar la salida al finalizar.',
       workedLabel: 'Tiempo acumulado hoy:',
       targetLabel: 'Aviso previo a:',
       acknowledge: 'Entendido',
@@ -403,7 +403,7 @@ export const TEXTS = {
       resolvedIncident: 'Incidencia resuelta',
       cannotCorrectResolved: 'Ya resuelta',
       incidentStartLabel: 'Inicio de jornada:',
-      incidentTargetOutLabel: 'Salida objetivo 7h30:',
+      incidentTargetOutLabel: 'Salida prevista (8h):',
       incidentStatusLabel: 'Estado:',
       incidentDetectedAtLabel: 'Detectada:',
       incidentResolvedAtLabel: 'Resuelta:',

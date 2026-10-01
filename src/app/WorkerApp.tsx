@@ -7,6 +7,7 @@ import { formatClockEventLabel } from "@/lib/time-event-labels";
 import { isSessionReplacedError, validateWorkerDeviceSession } from "@/lib/device-session";
 import { WorkdayTimeline } from "@/app/components/workday-timeline";
 import { TEXTS } from "@/constants/texts";
+import { DEFAULT_WORKDAY_MINUTES } from "@/lib/workday-policy";
 import logo from "@/assets/e7e41f04542fce7954ea5453ee29ba88235cf6cb.png";
 import headerLogo from "@/assets/logo-onus-express-color-2.png";
 import workerLoginBg from "@/assets/login/worker-login-bg.jpg";
@@ -43,7 +44,7 @@ type ClockLocation = {
   gps_accuracy_m: number | null;
 };
 
-const SHIFT_TARGET_MINUTES = 450;
+const SHIFT_TARGET_MINUTES = DEFAULT_WORKDAY_MINUTES;
 const SHIFT_REMINDER_BUFFER_MINUTES = 15;
 const WORKER_TERMS_VERSION = "v1.2-2026-09-29";
 const WORKER_TERMS_DOC_URL = (import.meta.env.VITE_WORKER_TERMS_DOC_URL as string | undefined)?.trim() || "";

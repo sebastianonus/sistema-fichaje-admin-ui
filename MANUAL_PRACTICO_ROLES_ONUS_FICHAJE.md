@@ -86,7 +86,7 @@ Este documento explica, de forma practica, como se usa la app segun cada rol ope
 - Aprobar y mantener vigente protocolo interno y clausula informativa.
 
 ## 8. Reglas operativas transversales
-- Jornada de referencia en el sistema: `7h 30m` (450 min).
+- Jornada de referencia en el sistema: `8h` (480 min).
 - El portal muestra aviso preventivo de salida cerca del limite diario.
 - Si una jornada queda abierta en exceso, se genera incidencia `LONG_OPEN_SHIFT`.
 - Registros y correcciones son trazables para auditoria.

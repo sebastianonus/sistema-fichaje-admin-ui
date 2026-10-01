@@ -101,7 +101,7 @@ Importante:
 
 ## Aviso de fin de jornada
 
-La plataforma puede mostrar un aviso cuando te acerques al final de tu jornada de 7 horas y media.
+La plataforma puede mostrar un aviso cuando te acerques al final de tu jornada de 8 horas.
 
 Ese aviso sirve para recordarte que debes fichar la salida al terminar y evitar errores.
 

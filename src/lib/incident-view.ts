@@ -1,3 +1,5 @@
+import { DEFAULT_WORKDAY_LABEL, DEFAULT_WORKDAY_MINUTES } from "./workday-policy";
+
 type ClockEventType = "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END";
 
 export type IncidentRelatedEvent = {
@@ -47,7 +49,6 @@ export type IncidentViewModel = {
   statusLabel: string;
 };
 
-const WORKDAY_MINUTES = 450;
 export const DEFAULT_INCIDENT_CORRECTION_NOTE = "Fichaje olvidado, mal uso de la herramienta";
 
 function formatMinutesCompact(minutes: number) {
@@ -57,7 +58,11 @@ function formatMinutesCompact(minutes: number) {
   return `${h}h ${m.toString().padStart(2, "0")}m`;
 }
 
-export function getWorkdayProgress(clockInAt?: string | null, events: IncidentTimelineEvent[] = []) {
+export function getWorkdayProgress(
+  clockInAt?: string | null,
+  events: IncidentTimelineEvent[] = [],
+  endAt?: string | null,
+) {
   if (!clockInAt) {
     return {
       netWorkedMinutes: 0,
@@ -80,7 +85,8 @@ export function getWorkdayProgress(clockInAt?: string | null, events: IncidentTi
   let breakStartAt: string | null = null;
   let breakStartMs: number | null = null;
   let breakMs = 0;
-  const nowMs = Date.now();
+  const parsedEndMs = endAt ? new Date(endAt).getTime() : Date.now();
+  const endMs = Number.isNaN(parsedEndMs) ? Date.now() : Math.max(startMs, parsedEndMs);
 
   const asc = [...events]
     .filter((event) => event.happened_at)
@@ -88,7 +94,7 @@ export function getWorkdayProgress(clockInAt?: string | null, events: IncidentTi
 
   for (const event of asc) {
     const atMs = new Date(event.happened_at || "").getTime();
-    if (Number.isNaN(atMs) || atMs < startMs) continue;
+    if (Number.isNaN(atMs) || atMs < startMs || atMs > endMs) continue;
 
     if (event.event_type === "BREAK_START" && breakStartMs === null) {
       breakStartMs = atMs;
@@ -103,27 +109,27 @@ export function getWorkdayProgress(clockInAt?: string | null, events: IncidentTi
     }
   }
 
-  const activeBreakMs = breakStartMs !== null ? Math.max(0, nowMs - breakStartMs) : 0;
+  const activeBreakMs = breakStartMs !== null ? Math.max(0, endMs - breakStartMs) : 0;
   const totalBreakMs = breakMs + activeBreakMs;
-  const netWorkedMinutes = Math.max(0, Math.round((nowMs - startMs - totalBreakMs) / 60000));
+  const netWorkedMinutes = Math.max(0, Math.round((endMs - startMs - totalBreakMs) / 60000));
 
   return {
     netWorkedMinutes,
-    breakMinutes: Math.round(breakMs / 60000),
-    activeBreakStartAt: breakStartAt,
+    breakMinutes: Math.round(totalBreakMs / 60000),
+    activeBreakStartAt: endAt ? null : breakStartAt,
     activeBreakMinutes: Math.round(activeBreakMs / 60000),
   };
 }
 
 export function addWorkdayTarget(value: string) {
-  return new Date(new Date(value).getTime() + WORKDAY_MINUTES * 60000).toISOString();
+  return new Date(new Date(value).getTime() + DEFAULT_WORKDAY_MINUTES * 60000).toISOString();
 }
 
 export function addNetWorkdayTarget(clockInAt: string, events: IncidentTimelineEvent[] = []) {
   const startMs = new Date(clockInAt).getTime();
   if (Number.isNaN(startMs)) return addWorkdayTarget(clockInAt);
 
-  let targetMs = startMs + WORKDAY_MINUTES * 60000;
+  let targetMs = startMs + DEFAULT_WORKDAY_MINUTES * 60000;
   let breakStartMs: number | null = null;
 
   const asc = [...events]
@@ -191,18 +197,18 @@ export function getIncidentView(input: IncidentViewInput): IncidentViewModel {
   const clockInAt = input.clock_in_at ?? (eventType === "CLOCK_IN" || eventType === "BREAK_END" ? eventAt : null);
   const currentOutAt = eventType === "CLOCK_OUT" ? eventAt : null;
   const suggestedOutAt = clockInAt ? addNetWorkdayTarget(clockInAt, input.timeline_events ?? []) : null;
-  const progress = getWorkdayProgress(clockInAt, input.timeline_events ?? []);
+  const progress = getWorkdayProgress(clockInAt, input.timeline_events ?? [], currentOutAt);
   const netWorkedValue = formatMinutesCompact(progress.netWorkedMinutes);
   const breakValue = progress.activeBreakStartAt
     ? `En pausa desde ${formatIncidentDateTime(progress.activeBreakStartAt)}`
     : progress.breakMinutes > 0
       ? `${formatMinutesCompact(progress.breakMinutes)} de pausa descontada`
-      : "Sin pausa registrada";
+      : "-";
   const targetHelp = progress.activeBreakStartAt
-    ? `Calculo provisional: entrada + 7h30 netas + ${formatMinutesCompact(progress.activeBreakMinutes)} de pausa abierta hasta ahora.`
+    ? `${DEFAULT_WORKDAY_LABEL} de trabajo + ${formatMinutesCompact(progress.activeBreakMinutes)} de pausa abierta.`
     : progress.breakMinutes > 0
-      ? `Calculo: entrada + 7h30 netas + ${formatMinutesCompact(progress.breakMinutes)} de pausa.`
-      : "Calculo: entrada + 7h30 netas.";
+      ? `${DEFAULT_WORKDAY_LABEL} de trabajo + ${formatMinutesCompact(progress.breakMinutes)} de pausa.`
+      : `Jornada: ${DEFAULT_WORKDAY_LABEL}.`;
   const technicalType = input.incident_type || "INCIDENT";
   const technicalEvent = eventType && eventAt ? `${eventType} - ${formatIncidentDateTime(eventAt)}` : null;
 
@@ -212,8 +218,8 @@ export function getIncidentView(input: IncidentViewInput): IncidentViewModel {
       title: "Horario excedido",
       shortTitle: "Horario excedido",
       problemLabel: "Problema",
-      description: "La salida registrada supera la jornada estipulada de 7h30.",
-      recommendedAction: "Revisar la salida y ajustarla si corresponde.",
+      description: `La jornada supera las ${DEFAULT_WORKDAY_LABEL}.`,
+      recommendedAction: "Revisar la salida.",
       eventToCorrect: "CLOCK_OUT",
       correctionButton: "Ajustar salida y resolver",
       primaryTimeLabel: "Entrada registrada",
@@ -237,11 +243,11 @@ export function getIncidentView(input: IncidentViewInput): IncidentViewModel {
   if (technicalType === "LONG_OPEN_SHIFT") {
     return {
       tone: "danger",
-      title: "Accion necesaria: registrar salida",
+      title: "Falta salida",
       shortTitle: "Falta salida",
       problemLabel: "Problema",
-      description: "Hay una entrada sin salida valida y ya supera las 7h30.",
-      recommendedAction: "Registrar la salida administrativa y resolver la incidencia.",
+      description: `No hay salida tras ${DEFAULT_WORKDAY_LABEL} de jornada.`,
+      recommendedAction: "Registrar la salida.",
       eventToCorrect: "CLOCK_OUT",
       correctionButton: "Registrar salida y resolver",
       primaryTimeLabel: "Entrada registrada",
