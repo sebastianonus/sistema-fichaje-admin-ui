@@ -1,4 +1,6 @@
 const DEVICE_ID_KEY = "onus-worker-device-id-v1";
+const DEVICE_ID_COOKIE = "onus-worker-device-id";
+const DEVICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 2;
 
 function getFunctionsBaseUrl() {
   const custom = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL as string | undefined;
@@ -15,12 +17,34 @@ function createDeviceId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 }
 
+function readDeviceCookie() {
+  if (typeof document === "undefined") return null;
+  const prefix = `${DEVICE_ID_COOKIE}=`;
+  const entry = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith(prefix));
+  return entry ? decodeURIComponent(entry.slice(prefix.length)).trim() : null;
+}
+
+function persistDeviceId(deviceId: string) {
+  window.localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${DEVICE_ID_COOKIE}=${encodeURIComponent(deviceId)}; Path=/; Max-Age=${DEVICE_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
+}
+
 export function getWorkerDeviceId() {
   if (typeof window === "undefined") return "server-device-unavailable";
   const existing = window.localStorage.getItem(DEVICE_ID_KEY)?.trim();
-  if (existing) return existing;
+  if (existing) {
+    persistDeviceId(existing);
+    return existing;
+  }
+  const recovered = readDeviceCookie();
+  if (recovered) {
+    persistDeviceId(recovered);
+    return recovered;
+  }
   const created = createDeviceId();
-  window.localStorage.setItem(DEVICE_ID_KEY, created);
+  persistDeviceId(created);
   return created;
 }
 
@@ -40,6 +64,29 @@ export function describeCurrentDevice() {
   return { browser, platform, label: `${browser} en ${platform}` };
 }
 
+export function getWorkerDeviceSignature() {
+  const device = describeCurrentDevice();
+  const nav = typeof navigator === "undefined" ? undefined : navigator;
+  const currentScreen = typeof screen === "undefined" ? undefined : screen;
+  const screenSides = currentScreen
+    ? [currentScreen.width, currentScreen.height].sort((a, b) => a - b).join("x")
+    : "unknown";
+  const memory = nav && "deviceMemory" in nav
+    ? String((nav as Navigator & { deviceMemory?: number }).deviceMemory ?? "unknown")
+    : "unknown";
+
+  return [
+    device.browser,
+    device.platform,
+    nav?.platform || "unknown",
+    String(nav?.hardwareConcurrency ?? "unknown"),
+    memory,
+    String(nav?.maxTouchPoints ?? "unknown"),
+    screenSides,
+    String(currentScreen?.colorDepth ?? "unknown"),
+  ].map(encodeURIComponent).join("|");
+}
+
 export function getWorkerDeviceHeaders() {
   const device = describeCurrentDevice();
   return {
@@ -47,6 +94,7 @@ export function getWorkerDeviceHeaders() {
     "x-device-label": device.label,
     "x-device-browser": device.browser,
     "x-device-platform": device.platform,
+    "x-device-signature": getWorkerDeviceSignature(),
   };
 }
 

@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { describeCurrentDevice, getWorkerDeviceHeaders, getWorkerDeviceId, logoutWorkerDeviceSession } from '@/lib/device-session';
+import { describeCurrentDevice, getWorkerDeviceHeaders, getWorkerDeviceId, getWorkerDeviceSignature, logoutWorkerDeviceSession } from '@/lib/device-session';
 
 describe('worker device identity', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    document.cookie = 'onus-worker-device-id=; Path=/; Max-Age=0';
     vi.stubGlobal('navigator', {
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0 Safari/537.36',
+      platform: 'Win32',
+      hardwareConcurrency: 8,
+      deviceMemory: 8,
+      maxTouchPoints: 0,
     });
   });
 
@@ -15,6 +20,14 @@ describe('worker device identity', () => {
     expect(getWorkerDeviceId()).toBe(first);
   });
 
+  it('recovers the device id from its persistent cookie', () => {
+    const first = getWorkerDeviceId();
+    window.localStorage.clear();
+
+    expect(getWorkerDeviceId()).toBe(first);
+    expect(window.localStorage.getItem('onus-worker-device-id-v1')).toBe(first);
+  });
+
   it('describes the browser and sends the same device id in headers', () => {
     expect(describeCurrentDevice()).toEqual({
       browser: 'Google Chrome',
@@ -22,6 +35,7 @@ describe('worker device identity', () => {
       label: 'Google Chrome en Windows',
     });
     expect(getWorkerDeviceHeaders()['x-device-id']).toBe(getWorkerDeviceId());
+    expect(getWorkerDeviceHeaders()['x-device-signature']).toBe(getWorkerDeviceSignature());
   });
 
   it('records an explicit worker logout before closing the auth session', async () => {
