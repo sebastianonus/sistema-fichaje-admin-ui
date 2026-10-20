@@ -50,6 +50,17 @@ const WORKER_TERMS_VERSION = "v1.2-2026-09-29";
 const WORKER_TERMS_DOC_URL = (import.meta.env.VITE_WORKER_TERMS_DOC_URL as string | undefined)?.trim() || "";
 const WORKER_PRIVACY_DOC_URL = (import.meta.env.VITE_WORKER_PRIVACY_DOC_URL as string | undefined)?.trim() || "";
 const APP_VERSION_LABEL = (import.meta.env.VITE_APP_VERSION as string | undefined)?.trim() || "worker-portal";
+const TERMS_PREVIEW_PROFILE: WorkerProfile = {
+  id: "terms-preview",
+  full_name: "Vista previa",
+  role: "worker",
+  is_active: true,
+  relationship_type: "EMPLOYEE",
+  email: "preview@local.test",
+  password_reset_required: false,
+  password_reset_deadline: null,
+  password_changed_at: null,
+};
 const WORKER_TERMS_READING_TEXT = [
   "1. Uso del sistema: El portal de fichaje solo puede utilizarse para registrar de forma veraz tu hora de entrada, pausa y salida durante tu jornada laboral.",
   "2. Credenciales personales: Esta prohibido compartir el email, la contrasena o cualquier medio de acceso. La cuenta es personal e intransferible.",
@@ -201,9 +212,10 @@ async function getCurrentLocation(): Promise<ClockLocation | null> {
 
 export default function WorkerApp() {
   const t = TEXTS.workerPortal;
-  const [ready, setReady] = useState(false);
-  const [authed, setAuthed] = useState(false);
-  const [profile, setProfile] = useState<WorkerProfile | null>(null);
+  const termsPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get("previewTerms") === "1";
+  const [ready, setReady] = useState(termsPreview);
+  const [authed, setAuthed] = useState(termsPreview);
+  const [profile, setProfile] = useState<WorkerProfile | null>(termsPreview ? TERMS_PREVIEW_PROFILE : null);
   const [events, setEvents] = useState<WorkerEvent[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -225,7 +237,7 @@ export default function WorkerApp() {
   const [dismissedResetModal, setDismissedResetModal] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
-  const [termsChecking, setTermsChecking] = useState(true);
+  const [termsChecking, setTermsChecking] = useState(!termsPreview);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsSubmitting, setTermsSubmitting] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
@@ -407,6 +419,7 @@ export default function WorkerApp() {
 
   useEffect(() => {
     async function boot() {
+      if (termsPreview) return;
       if (!supabase) {
         setReady(true);
         setAuthed(false);
@@ -438,7 +451,7 @@ export default function WorkerApp() {
   }, []);
 
   useEffect(() => {
-    if (!authed || !supabase) return;
+    if (termsPreview || !authed || !supabase) return;
     const id = window.setInterval(async () => {
       try {
         const { data } = await supabase.auth.getSession();
@@ -456,7 +469,7 @@ export default function WorkerApp() {
   }, [authed, t.errors.invalidSession]);
 
   useEffect(() => {
-    if (!authed) return;
+    if (termsPreview || !authed) return;
     const id = window.setInterval(async () => {
       const loadedProfile = await load();
       await loadTermsStatus(loadedProfile?.relationship_type);
@@ -544,6 +557,11 @@ export default function WorkerApp() {
     try {
       setTermsSubmitting(true);
       setTermsError(null);
+      if (termsPreview) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1200));
+        setTermsAccepted(true);
+        return;
+      }
       await acceptWorkerTerms(activeTermsVersion, APP_VERSION_LABEL);
       setTermsAccepted(true);
     } catch (err) {
