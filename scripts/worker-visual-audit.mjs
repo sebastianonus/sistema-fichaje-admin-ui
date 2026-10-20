@@ -6,6 +6,7 @@ const baseUrl = process.env.WORKER_AUDIT_URL || 'http://127.0.0.1:5173/worker';
 const email = process.env.LOCAL_WORKER_EMAIL;
 const password = process.env.LOCAL_WORKER_PASSWORD;
 const useFixture = process.env.WORKER_AUDIT_FIXTURE === 'true';
+const termsPending = process.env.WORKER_AUDIT_TERMS_PENDING === 'true';
 const relationshipType = process.env.WORKER_AUDIT_RELATIONSHIP === 'EXTERNAL' ? 'EXTERNAL' : 'EMPLOYEE';
 const outputDir = path.resolve('.artifacts/worker-audit');
 const technicalEventPattern = /\b(?:CLOCK_IN|CLOCK_OUT|BREAK_START|BREAK_END)\b/;
@@ -103,19 +104,25 @@ async function installWorkerFixture(context) {
       ],
     },
   }));
-  await context.route('**/functions/v1/worker-terms*', (route) => route.fulfill({
-    json: {
-      ok: true,
-      data: {
-        accepted: true,
-        acceptance: {
-          id: 'fixture-acceptance',
-          version: relationshipType === 'EXTERNAL' ? 'v1.2-2026-09-29-external-v1' : 'v1.2-2026-09-29',
-          accepted_at: new Date().toISOString(),
+  await context.route('**/functions/v1/worker-terms*', async (route) => {
+    const isAcceptance = route.request().method() === 'POST';
+    if (isAcceptance && termsPending) await new Promise((resolve) => setTimeout(resolve, 1200));
+    const accepted = !termsPending || isAcceptance;
+    await route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          accepted,
+          acceptance: accepted ? {
+            id: 'fixture-acceptance',
+            version: relationshipType === 'EXTERNAL' ? 'v1.2-2026-09-29-external-v1' : 'v1.2-2026-09-29',
+            accepted_at: new Date().toISOString(),
+          } : null,
+          already_accepted: false,
         },
       },
-    },
-  }));
+    });
+  });
   await context.route('**/functions/v1/worker-session*', (route) => route.fulfill({
     json: {
       ok: true,
@@ -157,6 +164,36 @@ async function capture(page, name, viewport) {
   await page.screenshot({ path: path.join(outputDir, `${name}.png`) });
 }
 
+async function captureTermsButton(page, name, expectedLabel, expectedBackground) {
+  const viewport = { width: 360, height: 640 };
+  await page.setViewportSize(viewport);
+  const button = page.getByRole('button', { name: expectedLabel });
+  await button.waitFor({ state: 'visible' });
+  await page.waitForFunction(
+    ({ label, background }) => Array.from(document.querySelectorAll('button')).some((element) =>
+      element.textContent?.trim() === label && window.getComputedStyle(element).backgroundColor === background,
+    ),
+    { label: expectedLabel, background: expectedBackground },
+  );
+  const box = await button.boundingBox();
+  const style = await button.evaluate((element) => {
+    const computed = window.getComputedStyle(element);
+    return { opacity: computed.opacity, backgroundColor: computed.backgroundColor };
+  });
+
+  if (!box || box.y < 0 || box.y + box.height > viewport.height) {
+    throw new Error(`${name}: terms action is outside the Android viewport`);
+  }
+  if (style.opacity !== '1') {
+    throw new Error(`${name}: terms action opacity is ${style.opacity}`);
+  }
+  if (style.backgroundColor !== expectedBackground) {
+    throw new Error(`${name}: unexpected terms action background ${style.backgroundColor}`);
+  }
+
+  await page.screenshot({ path: path.join(outputDir, `${name}.png`) });
+}
+
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const context = await browser.newContext({ locale: 'es-ES', timezoneId: 'Europe/Madrid' });
@@ -192,6 +229,15 @@ try {
     null,
     { timeout: 30_000 },
   );
+
+  if (termsPending) {
+    await captureTermsButton(page, 'worker-terms-disabled', 'Aceptar y continuar', 'rgb(226, 232, 240)');
+    await page.locator('input[type="checkbox"]').check();
+    await captureTermsButton(page, 'worker-terms-ready', 'Aceptar y continuar', 'rgb(0, 201, 206)');
+    await page.getByRole('button', { name: 'Aceptar y continuar' }).click();
+    await captureTermsButton(page, 'worker-terms-saving', 'Guardando aceptacion...', 'rgb(0, 9, 53)');
+    await page.getByRole('heading', { name: /Condiciones/ }).waitFor({ state: 'hidden' });
+  }
 
   await capture(page, 'worker-1280', { width: 1280, height: 800 });
   await capture(page, 'worker-mobile', { width: 390, height: 844 });

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { Clock3, Eye, EyeOff, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
+import { Clock3, Eye, EyeOff, LoaderCircle, Lock, LogIn, LogOut, Mail, User, X } from "lucide-react";
 import { changeCurrentUserPassword, signInWithRole, signOutAdmin, signOutWorker, supabase } from "@/lib/supabase";
 import { acceptWorkerTerms, getMyTimeEvents, getWorkerProfile, getWorkerTermsStatus, sendClockEvent } from "@/lib/worker-api";
 import { buildEffectiveTimeEvents } from "@/lib/time-events";
@@ -859,8 +859,8 @@ export default function WorkerApp() {
       </div>
 
       {authed && !termsAccepted && (
-        <div className="fixed inset-0 z-[70] bg-[#000935]/70 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white border border-[#d9e3ee] rounded-2xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-[#000935]/70 p-3 backdrop-blur-[2px] sm:items-center sm:p-4">
+          <div className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-[#d9e3ee] bg-white shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
             <div className="px-6 py-5 bg-[#00C9CE] text-white">
               <h2 className="text-xl font-bold text-white">{isExternal ? 'Condiciones del registro de servicios' : 'Condiciones de uso del portal de fichaje'}</h2>
               <p className="text-sm text-white/90 mt-2">
@@ -907,16 +907,28 @@ export default function WorkerApp() {
                 </span>
               </label>
 
-              {termsError && <p className="text-sm text-[#dc2626]">{termsError}</p>}
+              <div className="sticky bottom-0 -mx-6 -mb-6 space-y-3 border-t border-[#e2e8f0] bg-white px-6 py-4">
+                {termsError && <p className="text-sm text-[#dc2626]">{termsError}</p>}
 
-              <button
-                type="button"
-                onClick={handleAcceptTerms}
-                disabled={!termsChecked || termsChecking || termsSubmitting}
-                className="w-full px-4 py-2.5 bg-[#00C9CE] text-white rounded-lg hover:bg-[#00b3b8] disabled:opacity-50"
-              >
-                {termsChecking ? "Verificando..." : termsSubmitting ? "Guardando aceptacion..." : "Aceptar y continuar"}
-              </button>
+                <button
+                  type="button"
+                  onClick={handleAcceptTerms}
+                  disabled={!termsChecked || termsChecking || termsSubmitting}
+                  aria-live="polite"
+                  className={`flex min-h-11 w-full items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${
+                    termsSubmitting
+                      ? "border-[#000935] bg-[#000935] text-white"
+                      : termsChecked && !termsChecking
+                        ? "border-[#00C9CE] bg-[#00C9CE] text-[#000935] hover:bg-[#00b3b8]"
+                        : "border-[#cbd5e1] bg-[#e2e8f0] text-[#475569]"
+                  }`}
+                >
+                  <span className="inline-flex min-h-5 items-center justify-center gap-2">
+                    {termsSubmitting && <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />}
+                    {termsChecking ? "Verificando..." : termsSubmitting ? "Guardando aceptacion..." : "Aceptar y continuar"}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
